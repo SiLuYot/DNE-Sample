@@ -1,6 +1,9 @@
 using Unity.Entities;
 
-public struct PlayerSpawnerComponent : IComponentData
+namespace Component
 {
-    public Entity Player;
+    public struct PlayerSpawnerComponent : IComponentData
+    {
+        public Entity Player;
+    }
 }

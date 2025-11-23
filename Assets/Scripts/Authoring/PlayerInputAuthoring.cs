@@ -1,15 +1,19 @@
+using Component;
 using Unity.Entities;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public class PlayerInputAuthoring : MonoBehaviour
+namespace Authoring
 {
-    class PlayerInputBaking : Baker<PlayerInputAuthoring>
+    [DisallowMultipleComponent]
+    public class PlayerInputAuthoring : MonoBehaviour
     {
-        public override void Bake(PlayerInputAuthoring authoring)
+        class PlayerInputBaking : Baker<PlayerInputAuthoring>
         {
-            var entity = GetEntity(TransformUsageFlags.Dynamic);
-            AddComponent<PlayerInputComponent>(entity);
+            public override void Bake(PlayerInputAuthoring authoring)
+            {
+                var entity = GetEntity(TransformUsageFlags.Dynamic);
+                AddComponent<PlayerInputComponent>(entity);
+            }
         }
     }
 }

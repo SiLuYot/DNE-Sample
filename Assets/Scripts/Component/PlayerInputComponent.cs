@@ -1,7 +1,10 @@
 ﻿using Unity.NetCode;
 
-public struct PlayerInputComponent : IInputComponentData
+namespace Component
 {
-    public float Horizontal;
-    public float Vertical;
+    public struct PlayerInputComponent : IInputComponentData
+    {
+        public float Horizontal;
+        public float Vertical;
+    }
 }

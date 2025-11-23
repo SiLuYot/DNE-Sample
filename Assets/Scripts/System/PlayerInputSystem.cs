@@ -1,23 +1,27 @@
-﻿using Unity.Entities;
+﻿using Component;
+using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
 
-[UpdateInGroup(typeof(GhostInputSystemGroup))]
-public partial struct PlayerInputSystem : ISystem
+namespace System
 {
-    public void OnCreate(ref SystemState state)
+    [UpdateInGroup(typeof(GhostInputSystemGroup))]
+    public partial struct PlayerInputSystem : ISystem
     {
-        state.RequireForUpdate<NetworkStreamInGame>();
-        state.RequireForUpdate<PlayerSpawnerComponent>();
-    }
-
-    public void OnUpdate(ref SystemState state)
-    {
-        foreach (var playerInput in SystemAPI.Query<RefRW<PlayerInputComponent>>().WithAll<GhostOwnerIsLocal>())
+        public void OnCreate(ref SystemState state)
         {
-            playerInput.ValueRW = default;
-            playerInput.ValueRW.Horizontal = Input.GetAxis("Horizontal");
-            playerInput.ValueRW.Vertical = Input.GetAxis("Vertical");
+            state.RequireForUpdate<NetworkStreamInGame>();
+            state.RequireForUpdate<PlayerSpawnerComponent>();
+        }
+
+        public void OnUpdate(ref SystemState state)
+        {
+            foreach (var playerInput in SystemAPI.Query<RefRW<PlayerInputComponent>>().WithAll<GhostOwnerIsLocal>())
+            {
+                playerInput.ValueRW = default;
+                playerInput.ValueRW.Horizontal = Input.GetAxis("Horizontal");
+                playerInput.ValueRW.Vertical = Input.GetAxis("Vertical");
+            }
         }
     }
 }

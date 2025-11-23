@@ -1,20 +1,24 @@
+using Component;
 using Unity.Entities;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public class PlayerSpawnerAuthoring : MonoBehaviour
+namespace Authoring
 {
-    [SerializeField] private GameObject _playerPrefab;
-
-    class Baker : Baker<PlayerSpawnerAuthoring>
+    [DisallowMultipleComponent]
+    public class PlayerSpawnerAuthoring : MonoBehaviour
     {
-        public override void Bake(PlayerSpawnerAuthoring authoring)
+        [SerializeField] private GameObject _playerPrefab;
+
+        class Baker : Baker<PlayerSpawnerAuthoring>
         {
-            PlayerSpawnerComponent component = default(PlayerSpawnerComponent);
-            component.Player = GetEntity(authoring._playerPrefab, TransformUsageFlags.Dynamic);
+            public override void Bake(PlayerSpawnerAuthoring authoring)
+            {
+                PlayerSpawnerComponent component = default(PlayerSpawnerComponent);
+                component.Player = GetEntity(authoring._playerPrefab, TransformUsageFlags.Dynamic);
             
-            var entity = GetEntity(TransformUsageFlags.Dynamic);
-            AddComponent(entity, component);
+                var entity = GetEntity(TransformUsageFlags.Dynamic);
+                AddComponent(entity, component);
+            }
         }
     }
 }
