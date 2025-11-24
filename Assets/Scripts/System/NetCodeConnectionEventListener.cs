@@ -5,38 +5,26 @@ using Unity.NetCode;
 namespace System
 {
     [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
-    [UpdateAfter(typeof(NetworkReceiveSystemGroup))]
     public partial struct NetCodeConnectionEventListener : ISystem
     {
+        private bool _wasConnected;
+
         public void OnCreate(ref SystemState state)
         {
-            var entity = state.EntityManager.CreateEntity(typeof(PlayerConnectionComponent));
-            state.EntityManager.SetComponentData(entity, new PlayerConnectionComponent());
-
-            state.RequireForUpdate<NetworkId>();
-            state.RequireForUpdate<NetworkStreamDriver>();
-            state.RequireForUpdate<PlayerConnectionComponent>();
+            _wasConnected = SystemAPI.HasSingleton<NetworkStreamInGame>();
         }
 
         public void OnUpdate(ref SystemState state)
         {
-            var localNetworkId = SystemAPI.GetSingleton<NetworkId>().Value;
-            var driver = SystemAPI.GetSingleton<NetworkStreamDriver>();
+            var isConnected = SystemAPI.HasSingleton<NetworkStreamInGame>();
+            if (isConnected == _wasConnected)
+                return;
 
-            var entity = SystemAPI.GetSingletonEntity<PlayerConnectionComponent>();
-            var connection = state.EntityManager.GetComponentData<PlayerConnectionComponent>(entity);
+            state.EntityManager.CreateEntity(isConnected
+                ? typeof(PlayerConnectedEvent)
+                : typeof(PlayerDisconnectedEvent));
 
-            foreach (var evt in driver.ConnectionEventsForTick)
-            {
-                if (evt.Id.Value != localNetworkId)
-                    continue;
-
-                connection.IsConnected = evt.State == ConnectionState.State.Connected;
-                connection.Updated = true;
-                
-                state.EntityManager.SetComponentData(entity, connection);
-                break;
-            }
+            _wasConnected = isConnected;
         }
     }
 }

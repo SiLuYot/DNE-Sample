@@ -55,6 +55,7 @@ namespace System
                 var player = commandBuffer.Instantiate(prefab);
                 // Associate the instantiated prefab with the connected client's assigned NetworkId
                 commandBuffer.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
+                commandBuffer.SetComponent(player, new PlayerComponent { NetworkId = networkId.Value });
 
                 // Add the player to the linked entity group so it is destroyed automatically on disconnect
                 commandBuffer.AppendToBuffer(reqSrc.ValueRO.SourceConnection, new LinkedEntityGroup { Value = player });

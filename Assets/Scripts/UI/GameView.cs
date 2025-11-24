@@ -1,7 +1,10 @@
 ﻿using Component;
+using TMPro;
 using Unity.Entities;
 using Unity.NetCode;
+using Unity.Services.Authentication;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace UI
 {
@@ -10,33 +13,66 @@ namespace UI
         [SerializeField] private GameObject _lobbyRoot;
         [SerializeField] private GameObject _inGameRoot;
 
-        private World _world;
-        private EntityManager _em;
+        [SerializeField] private TMP_InputField _nickName;
+        [SerializeField] private Button _nameChange;
+
+        private bool _isRequested = false;
+        private EntityQuery _connectedQuery;
+        private EntityQuery _disconnectedQuery;
 
         private void Start()
         {
-            _world = ClientServerBootstrap.ClientWorld;
-            _em = _world.EntityManager;
-            
-            _lobbyRoot.SetActive(true);
-            _inGameRoot.SetActive(false);
+            _connectedQuery = ClientServerBootstrap.ClientWorld.EntityManager
+                .CreateEntityQuery(typeof(PlayerConnectedEvent));
+
+            _disconnectedQuery = ClientServerBootstrap.ClientWorld.EntityManager
+                .CreateEntityQuery(typeof(PlayerDisconnectedEvent));
+
+            HandleDisconnection();
+
+            _nameChange.onClick.AddListener(OnClickNameChange);
+            _nickName.text = AuthenticationService.Instance.PlayerName;
         }
 
         private void Update()
         {
-            var query = _em.CreateEntityQuery(typeof(PlayerConnectionComponent));
-            if (!query.TryGetSingletonEntity<PlayerConnectionComponent>(out var entity))
+            if (!_connectedQuery.IsEmpty)
+                HandleConnection();
+
+            if (!_disconnectedQuery.IsEmpty)
+                HandleDisconnection();
+        }
+
+        private void HandleConnection()
+        {
+            _lobbyRoot.SetActive(false);
+            _inGameRoot.SetActive(true);
+        }
+
+        private void HandleDisconnection()
+        {
+            _lobbyRoot.SetActive(true);
+            _inGameRoot.SetActive(false);
+        }
+
+        private async void ChangeNameAsync(string playerName)
+        {
+            if (_isRequested)
                 return;
 
-            var connection = _em.GetComponentData<PlayerConnectionComponent>(entity);
-            if (!connection.Updated)
+            _isRequested = true;
+            await AuthenticationService.Instance.UpdatePlayerNameAsync(playerName);
+            _isRequested = false;
+
+            _nickName.text = AuthenticationService.Instance.PlayerName;
+        }
+
+        private void OnClickNameChange()
+        {
+            if (string.IsNullOrEmpty(_nickName.text))
                 return;
 
-            _lobbyRoot.SetActive(!connection.IsConnected);
-            _inGameRoot.SetActive(connection.IsConnected);
-
-            connection.Updated = false;
-            _em.SetComponentData(entity, connection);
+            ChangeNameAsync(_nickName.text);
         }
     }
 }

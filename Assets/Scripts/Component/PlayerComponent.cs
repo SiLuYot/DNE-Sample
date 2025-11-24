@@ -4,5 +4,6 @@ namespace Component
 {
     public struct PlayerComponent : IComponentData
     {
+        public int NetworkId;
     }
 }
