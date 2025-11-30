@@ -37,6 +37,8 @@ namespace System
                          .WithNone<NetworkStreamInGame>())
             {
                 commandBuffer.AddComponent<NetworkStreamInGame>(entity);
+                commandBuffer.AddComponent<LocalConnectionTag>(entity);
+                
                 var req = commandBuffer.CreateEntity();
                 commandBuffer.AddComponent<GoInGameRequest>(req);
                 commandBuffer.AddComponent(req, new SendRpcCommandRequest { TargetConnection = entity });

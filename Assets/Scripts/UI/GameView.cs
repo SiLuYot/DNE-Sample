@@ -22,11 +22,22 @@ namespace UI
 
         private void Start()
         {
-            _connectedQuery = ClientServerBootstrap.ClientWorld.EntityManager
-                .CreateEntityQuery(typeof(PlayerConnectedEvent));
-
-            _disconnectedQuery = ClientServerBootstrap.ClientWorld.EntityManager
-                .CreateEntityQuery(typeof(PlayerDisconnectedEvent));
+            var world = ClientServerBootstrap.ClientWorld;
+            
+            var query = world.EntityManager.CreateEntityQuery(typeof(MainCanvasTag));
+            if (query.IsEmptyIgnoreFilter)
+            {
+                var canvasEntity = world.EntityManager.CreateEntity();
+            
+                world.EntityManager.AddComponentData(canvasEntity, new MainCanvasTag()); 
+                world.EntityManager.AddComponentObject(canvasEntity, new UICanvasComponent() 
+                {
+                    CanvasReference = GetComponent<Canvas>() 
+                });
+            }
+            
+            _connectedQuery = world.EntityManager.CreateEntityQuery(typeof(PlayerConnectedEvent));
+            _disconnectedQuery = world.EntityManager.CreateEntityQuery(typeof(PlayerDisconnectedEvent));
 
             HandleDisconnection();
 

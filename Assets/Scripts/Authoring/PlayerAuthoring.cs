@@ -1,5 +1,6 @@
 using Component;
 using Unity.Entities;
+using Unity.Services.Authentication;
 using UnityEngine;
 
 namespace Authoring
@@ -13,6 +14,10 @@ namespace Authoring
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<PlayerComponent>(entity);
+
+                var nameComp = default(PlayerNameComponent);
+                nameComp.Name = AuthenticationService.Instance.PlayerName;
+                AddComponent(entity, nameComp);
             }
         }
     }

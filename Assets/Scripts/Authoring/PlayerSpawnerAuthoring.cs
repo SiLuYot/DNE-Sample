@@ -13,7 +13,7 @@ namespace Authoring
         {
             public override void Bake(PlayerSpawnerAuthoring authoring)
             {
-                PlayerSpawnerComponent component = default(PlayerSpawnerComponent);
+                var component = default(PlayerSpawnerComponent);
                 component.Player = GetEntity(authoring._playerPrefab, TransformUsageFlags.Dynamic);
             
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
