@@ -14,10 +14,7 @@ namespace Authoring
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<PlayerComponent>(entity);
-
-                var nameComp = default(PlayerNameComponent);
-                nameComp.Name = AuthenticationService.Instance.PlayerName;
-                AddComponent(entity, nameComp);
+                AddComponent<PlayerNameComponent>(entity);
             }
         }
     }

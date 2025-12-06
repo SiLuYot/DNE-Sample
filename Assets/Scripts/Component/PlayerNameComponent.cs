@@ -7,6 +7,6 @@ namespace Component
     public struct PlayerNameComponent : IComponentData
     {
         [GhostField]
-        public FixedString64Bytes Name;
+        public FixedString128Bytes PlayerName;
     }
 }

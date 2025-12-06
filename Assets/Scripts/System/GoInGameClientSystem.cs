@@ -4,6 +4,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
+using Unity.Services.Authentication;
 using EntityQueryBuilder = Unity.Entities.EntityQueryBuilder;
 using ISystem = Unity.Entities.ISystem;
 using SystemState = Unity.Entities.SystemState;
@@ -11,7 +12,6 @@ using WorldSystemFilterFlags = Unity.Entities.WorldSystemFilterFlags;
 
 namespace System
 {
-    // When client has a connection with network ID, go in game and tell server to also go in game
     [BurstCompile]
     [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
     public partial struct GoInGameClientSystem : ISystem
@@ -19,7 +19,6 @@ namespace System
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            // Run only on entities with a PlayerSpawner component data
             state.RequireForUpdate<PlayerSpawnerComponent>();
 
             var builder = new EntityQueryBuilder(Allocator.Temp)
@@ -29,7 +28,7 @@ namespace System
             state.RequireForUpdate(state.GetEntityQuery(builder));
         }
 
-        [BurstCompile]
+        //[BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
@@ -40,7 +39,7 @@ namespace System
                 commandBuffer.AddComponent<LocalConnectionTag>(entity);
                 
                 var req = commandBuffer.CreateEntity();
-                commandBuffer.AddComponent<GoInGameRequest>(req);
+                commandBuffer.AddComponent(req, new GoInGameRequest() {PlayerName = AuthenticationService.Instance.PlayerName});
                 commandBuffer.AddComponent(req, new SendRpcCommandRequest { TargetConnection = entity });
             }
 
