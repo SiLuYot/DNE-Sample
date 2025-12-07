@@ -2,7 +2,7 @@
 
 namespace Component
 {
-    public struct LocalConnectionTag : IComponentData
+    public struct EnemyComponent : IComponentData
     {
     }
 }

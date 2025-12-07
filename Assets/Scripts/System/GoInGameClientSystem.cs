@@ -32,11 +32,12 @@ namespace System
         public void OnUpdate(ref SystemState state)
         {
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
-            foreach (var (id, entity) in SystemAPI.Query<RefRO<NetworkId>>().WithEntityAccess()
+            foreach (var (id, entity) in SystemAPI
+                         .Query<RefRO<NetworkId>>()
+                         .WithEntityAccess()
                          .WithNone<NetworkStreamInGame>())
             {
                 commandBuffer.AddComponent<NetworkStreamInGame>(entity);
-                commandBuffer.AddComponent<LocalConnectionTag>(entity);
                 
                 var req = commandBuffer.CreateEntity();
                 commandBuffer.AddComponent(req, new GoInGameRequest() {PlayerName = AuthenticationService.Instance.PlayerName});

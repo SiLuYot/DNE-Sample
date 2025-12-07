@@ -18,40 +18,40 @@ namespace UI
 
         private bool _isRequested = false;
         private EntityQuery _connectedQuery;
-        private EntityQuery _disconnectedQuery;
 
         private void Start()
         {
             var world = ClientServerBootstrap.ClientWorld;
-            
+
             var query = world.EntityManager.CreateEntityQuery(typeof(MainCanvasTag));
             if (query.IsEmptyIgnoreFilter)
             {
                 var canvasEntity = world.EntityManager.CreateEntity();
-            
-                world.EntityManager.AddComponentData(canvasEntity, new MainCanvasTag()); 
-                world.EntityManager.AddComponentObject(canvasEntity, new UICanvasComponent() 
+
+                world.EntityManager.AddComponentData(canvasEntity, new MainCanvasTag());
+                world.EntityManager.AddComponentObject(canvasEntity, new UICanvasComponent()
                 {
-                    CanvasReference = GetComponent<Canvas>() 
+                    CanvasReference = GetComponent<Canvas>()
                 });
             }
-            
-            _connectedQuery = world.EntityManager.CreateEntityQuery(typeof(PlayerConnectedEvent));
-            _disconnectedQuery = world.EntityManager.CreateEntityQuery(typeof(PlayerDisconnectedEvent));
-
-            HandleDisconnection();
 
             _nameChange.onClick.AddListener(OnClickNameChange);
             _nickName.text = AuthenticationService.Instance.PlayerName;
+            _connectedQuery = world.EntityManager.CreateEntityQuery(typeof(NetworkStreamConnection));
+
+            HandleDisconnection();
         }
 
         private void Update()
         {
-            if (!_connectedQuery.IsEmpty)
-                HandleConnection();
-
-            if (!_disconnectedQuery.IsEmpty)
+            if (_connectedQuery.IsEmpty)
+            {
                 HandleDisconnection();
+            }
+            else
+            {
+                HandleConnection();
+            }
         }
 
         private void HandleConnection()

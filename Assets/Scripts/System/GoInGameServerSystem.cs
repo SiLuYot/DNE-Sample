@@ -4,7 +4,6 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
-using UnityEngine;
 
 namespace System
 {
@@ -32,11 +31,8 @@ namespace System
         public void OnUpdate(ref SystemState state)
         {
             var prefab = SystemAPI.GetSingleton<PlayerSpawnerComponent>().Player;
-
-            state.EntityManager.GetName(prefab, out var prefabName);
-            var worldName = new FixedString32Bytes(state.WorldUnmanaged.Name);
-
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+            
             _networkIdFromEntity.Update(ref state);
 
             foreach (var (reqSrc, reqData, reqEntity) in SystemAPI
@@ -47,8 +43,6 @@ namespace System
                 commandBuffer.AddComponent<NetworkStreamInGame>(reqSrc.ValueRO.SourceConnection);
                 
                 var networkId = _networkIdFromEntity[reqSrc.ValueRO.SourceConnection];
-                Debug.Log($"'{worldName}' setting connection '{networkId.Value}' to in game, spawning a Ghost '{prefabName}' for them!");
-
                 var player = commandBuffer.Instantiate(prefab);
                 commandBuffer.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
                 commandBuffer.SetComponent(player, new PlayerComponent { NetworkId = networkId.Value });

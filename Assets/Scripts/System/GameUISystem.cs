@@ -3,27 +3,23 @@ using UI;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
 
 namespace System
 {
-    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation | WorldSystemFilterFlags.Presentation)]
+    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation |
+                       WorldSystemFilterFlags.Presentation)]
     public partial class GameUISystem : SystemBase
     {
         private EntityQuery _uiConfigQuery;
         private EntityQuery _canvasQuery;
-        private EntityQuery _cameraTargetQuery;
 
         protected override void OnCreate()
         {
             _uiConfigQuery = GetEntityQuery(ComponentType.ReadOnly<UIConfigComponent>());
             _canvasQuery = GetEntityQuery(ComponentType.ReadOnly<MainCanvasTag>());
-
-            _cameraTargetQuery = GetEntityQuery(
-                ComponentType.ReadOnly<LocalToWorld>(),
-                ComponentType.ReadOnly<LocalPlayerTag>()
-            );
 
             RequireForUpdate(_uiConfigQuery);
             RequireForUpdate(_canvasQuery);
@@ -58,7 +54,8 @@ namespace System
             var canvasEntity = _canvasQuery.GetSingletonEntity();
             var canvas = EntityManager.GetComponentObject<UICanvasComponent>(canvasEntity).CanvasReference;
 
-            foreach (var (playerData, entity) in SystemAPI.Query<RefRO<PlayerNameComponent>>()
+            foreach (var (playerData, entity) in SystemAPI
+                         .Query<RefRO<PlayerNameComponent>>()
                          .WithNone<PlayerUICleanup>()
                          .WithEntityAccess())
             {
@@ -69,7 +66,7 @@ namespace System
 
                 ecb.AddComponent(entity, new PlayerUICleanup { View = uiScript });
             }
-            
+
             foreach (var (transform, entity) in SystemAPI
                          .Query<RefRO<LocalToWorld>>()
                          .WithAll<PlayerUICleanup>()
@@ -81,12 +78,13 @@ namespace System
                     uiRef.View.UpdatePosition(transform.ValueRO.Position);
                 }
             }
-            
-            if (!_cameraTargetQuery.IsEmpty)
+
+            foreach (var (transform, entity) in SystemAPI
+                         .Query<RefRO<LocalToWorld>>()
+                         .WithAll<GhostOwnerIsLocal>()
+                         .WithEntityAccess())
             {
-                var targetEntity = _cameraTargetQuery.GetSingletonEntity();
-                var targetTransform = EntityManager.GetComponentData<LocalToWorld>(targetEntity);
-                Camera.main.transform.position = targetTransform.Position + new float3(0, 12f, -5f);
+                Camera.main.transform.position = transform.ValueRO.Position + new float3(0, 12f, -5f);
             }
         }
     }

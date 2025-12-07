@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Authoring
 {
+    [DisallowMultipleComponent]
     public class PlayerNameAuthoring : MonoBehaviour
     {
         [SerializeField] private GameObject _namePrefab;

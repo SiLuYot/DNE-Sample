@@ -1,6 +1,5 @@
 using Component;
 using Unity.Entities;
-using Unity.Services.Authentication;
 using UnityEngine;
 
 namespace Authoring
