@@ -1,7 +1,7 @@
 ﻿using Unity.Entities;
 using UnityEngine;
 
-namespace Component
+namespace Component.UI
 {
     public class UIConfigComponent : IComponentData
     {

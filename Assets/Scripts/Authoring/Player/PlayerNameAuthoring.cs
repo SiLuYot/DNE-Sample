@@ -1,8 +1,8 @@
-﻿using Component;
+﻿using Component.UI;
 using Unity.Entities;
 using UnityEngine;
 
-namespace Authoring
+namespace Authoring.Player
 {
     [DisallowMultipleComponent]
     public class PlayerNameAuthoring : MonoBehaviour

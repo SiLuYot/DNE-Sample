@@ -1,4 +1,5 @@
-﻿using Component;
+﻿using Component.Player;
+using Component.UI;
 using UI;
 using Unity.Collections;
 using Unity.Entities;
@@ -19,7 +20,7 @@ namespace System
         protected override void OnCreate()
         {
             _uiConfigQuery = GetEntityQuery(ComponentType.ReadOnly<UIConfigComponent>());
-            _canvasQuery = GetEntityQuery(ComponentType.ReadOnly<MainCanvasTag>());
+            _canvasQuery = GetEntityQuery(ComponentType.ReadOnly<UICanvasTag>());
 
             RequireForUpdate(_uiConfigQuery);
             RequireForUpdate(_canvasQuery);
@@ -32,20 +33,20 @@ namespace System
                 .CreateCommandBuffer(World.Unmanaged);
 
             var cleanupQuery = SystemAPI.QueryBuilder()
-                .WithAll<PlayerUICleanup>()
+                .WithAll<UICleanupComponent>()
                 .WithNone<LocalToWorld>()
                 .Build();
 
             using var cleanupEntities = cleanupQuery.ToEntityArray(Allocator.Temp);
             foreach (var entity in cleanupEntities)
             {
-                var cleanupComp = EntityManager.GetComponentObject<PlayerUICleanup>(entity);
+                var cleanupComp = EntityManager.GetComponentObject<UICleanupComponent>(entity);
                 if (cleanupComp.View != null)
                 {
                     UnityEngine.Object.Destroy(cleanupComp.View.gameObject);
                 }
 
-                ecb.RemoveComponent<PlayerUICleanup>(entity);
+                ecb.RemoveComponent<UICleanupComponent>(entity);
             }
 
             var configEntity = _uiConfigQuery.GetSingletonEntity();
@@ -54,25 +55,25 @@ namespace System
             var canvasEntity = _canvasQuery.GetSingletonEntity();
             var canvas = EntityManager.GetComponentObject<UICanvasComponent>(canvasEntity).CanvasReference;
 
-            foreach (var (playerData, entity) in SystemAPI
+            foreach (var (nameComp, entity) in SystemAPI
                          .Query<RefRO<PlayerNameComponent>>()
-                         .WithNone<PlayerUICleanup>()
+                         .WithNone<UICleanupComponent>()
                          .WithEntityAccess())
             {
                 var uiObj = UnityEngine.Object.Instantiate(uiConfig.NamePrefab, canvas.transform);
                 var uiScript = uiObj.GetComponent<PlayerNameView>();
 
-                uiScript.SetName(playerData.ValueRO.PlayerName.ToString());
+                uiScript.SetName(nameComp.ValueRO.PlayerName.ToString());
 
-                ecb.AddComponent(entity, new PlayerUICleanup { View = uiScript });
+                ecb.AddComponent(entity, new UICleanupComponent { View = uiScript });
             }
 
             foreach (var (transform, entity) in SystemAPI
                          .Query<RefRO<LocalToWorld>>()
-                         .WithAll<PlayerUICleanup>()
+                         .WithAll<UICleanupComponent>()
                          .WithEntityAccess())
             {
-                var uiRef = EntityManager.GetComponentObject<PlayerUICleanup>(entity);
+                var uiRef = EntityManager.GetComponentObject<UICleanupComponent>(entity);
                 if (uiRef.View != null)
                 {
                     uiRef.View.UpdatePosition(transform.ValueRO.Position);

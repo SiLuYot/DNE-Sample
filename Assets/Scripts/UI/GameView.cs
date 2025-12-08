@@ -1,4 +1,4 @@
-﻿using Component;
+﻿using Component.UI;
 using TMPro;
 using Unity.Entities;
 using Unity.NetCode;
@@ -23,12 +23,12 @@ namespace UI
         {
             var world = ClientServerBootstrap.ClientWorld;
 
-            var query = world.EntityManager.CreateEntityQuery(typeof(MainCanvasTag));
+            var query = world.EntityManager.CreateEntityQuery(typeof(UICanvasTag));
             if (query.IsEmptyIgnoreFilter)
             {
                 var canvasEntity = world.EntityManager.CreateEntity();
 
-                world.EntityManager.AddComponentData(canvasEntity, new MainCanvasTag());
+                world.EntityManager.AddComponentData(canvasEntity, new UICanvasTag());
                 world.EntityManager.AddComponentObject(canvasEntity, new UICanvasComponent()
                 {
                     CanvasReference = GetComponent<Canvas>()

@@ -2,11 +2,11 @@
 using Unity.Entities;
 using Unity.NetCode;
 
-namespace Component
+namespace Component.Player
 {
     public struct PlayerNameComponent : IComponentData
     {
-        [GhostField]
+        [GhostField] 
         public FixedString128Bytes PlayerName;
     }
 }

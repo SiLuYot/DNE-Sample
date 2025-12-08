@@ -1,4 +1,4 @@
-﻿using Component;
+﻿using Component.Player;
 using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;

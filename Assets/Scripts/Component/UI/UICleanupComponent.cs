@@ -1,9 +1,9 @@
 ﻿using UI;
 using Unity.Entities;
 
-namespace Component
+namespace Component.UI
 {
-    public class PlayerUICleanup : ICleanupComponentData
+    public class UICleanupComponent : ICleanupComponentData
     {
         public PlayerNameView View;
     }

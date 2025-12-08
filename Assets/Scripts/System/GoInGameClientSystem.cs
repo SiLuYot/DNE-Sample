@@ -1,4 +1,4 @@
-﻿using Component;
+﻿using Component.Player;
 using RPC;
 using Unity.Burst;
 using Unity.Collections;
@@ -38,9 +38,9 @@ namespace System
                          .WithNone<NetworkStreamInGame>())
             {
                 commandBuffer.AddComponent<NetworkStreamInGame>(entity);
-                
+
                 var req = commandBuffer.CreateEntity();
-                commandBuffer.AddComponent(req, new GoInGameRequest() {PlayerName = AuthenticationService.Instance.PlayerName});
+                commandBuffer.AddComponent(req, new GoInGameRequest() { PlayerName = AuthenticationService.Instance.PlayerName });
                 commandBuffer.AddComponent(req, new SendRpcCommandRequest { TargetConnection = entity });
             }
 

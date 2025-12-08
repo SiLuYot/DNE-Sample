@@ -1,12 +1,10 @@
 ﻿using Unity.Entities;
 using UnityEngine;
 
-namespace Component
+namespace Component.UI
 {
     public class UICanvasComponent : IComponentData
     {
         public Canvas CanvasReference;
     }
-    
-    public struct MainCanvasTag : IComponentData {}
 }

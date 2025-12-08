@@ -1,4 +1,4 @@
-using Component;
+using Component.Player;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -15,7 +15,9 @@ namespace System
         public void OnUpdate(ref SystemState state)
         {
             var speed = SystemAPI.Time.DeltaTime * 6;
-            foreach (var (input, trans) in SystemAPI.Query<RefRO<PlayerInputComponent>, RefRW<LocalTransform>>().WithAll<Simulate>())
+            foreach (var (input, trans) in SystemAPI
+                         .Query<RefRO<PlayerInputComponent>, RefRW<LocalTransform>>()
+                         .WithAll<Simulate>())
             {
                 var moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
                 moveInput = math.normalizesafe(moveInput) * speed;

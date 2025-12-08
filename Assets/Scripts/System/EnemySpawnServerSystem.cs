@@ -1,7 +1,9 @@
-﻿using Component;
+﻿using Component.Enemy;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Transforms;
 
 namespace System
 {
@@ -28,8 +30,20 @@ namespace System
             var prefab = SystemAPI.GetSingleton<EnemySpawnerComponent>().Enemy;
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-            var enemy = commandBuffer.Instantiate(prefab);
-            commandBuffer.SetComponent(enemy, new EnemyComponent());
+            foreach (var transform in SystemAPI
+                         .Query<RefRO<LocalTransform>>()
+                         .WithAll<EnemySpawnPointComponent>())
+            {
+                var enemy = commandBuffer.Instantiate(prefab);
+                commandBuffer.SetComponent(enemy, new EnemyComponent());
+                commandBuffer.SetComponent(enemy, new LocalTransform
+                {
+                    Position = transform.ValueRO.Position,
+                    Rotation = quaternion.identity,
+                    Scale = 1f
+                });
+            }
+
             commandBuffer.Playback(state.EntityManager);
         }
     }

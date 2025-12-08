@@ -1,8 +1,8 @@
-﻿using Component;
+﻿using Component.Enemy;
 using Unity.Entities;
 using UnityEngine;
 
-namespace Authoring
+namespace Authoring.Enemy
 {
     [DisallowMultipleComponent]
     public class EnemyAuthoring : MonoBehaviour

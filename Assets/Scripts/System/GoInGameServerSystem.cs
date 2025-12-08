@@ -1,4 +1,5 @@
 ﻿using Component;
+using Component.Player;
 using RPC;
 using Unity.Burst;
 using Unity.Collections;
