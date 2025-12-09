@@ -10,27 +10,24 @@ using Unity.Transforms;
 namespace System
 {
     [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-    public partial struct EnemyChaseServerSystem : ISystem
+    [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+    public partial struct ChaseServerSystem : ISystem
     {
-        private const float MoveSpeed = 4f;
+        private float _moveSpeed;
         private EntityQuery _playerQuery;
 
+        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
+            _moveSpeed = 4f;
+
             state.RequireForUpdate<NetworkStreamInGame>();
             state.RequireForUpdate<EnemyComponent>();
             state.RequireForUpdate<PlayerComponent>();
 
-            var queryDescription = new EntityQueryDesc
-            {
-                All = new[]
-                {
-                    ComponentType.ReadOnly<PlayerComponent>(),
-                    ComponentType.ReadOnly<LocalTransform>()
-                }
-            };
-
-            _playerQuery = state.GetEntityQuery(queryDescription);
+            _playerQuery = SystemAPI.QueryBuilder()
+                .WithAll<PlayerComponent, LocalTransform>()
+                .Build();
         }
 
         [BurstCompile]
@@ -41,11 +38,10 @@ namespace System
 
             var playerTransforms = _playerQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
 
-            var job = new EnemyChaseJob
+            var job = new ChaseJob
             {
-                DeltaTime = SystemAPI.Time.DeltaTime,
-                MoveSpeed = MoveSpeed,
-                PlayerTransforms = playerTransforms
+                PlayerTransforms = playerTransforms,
+                Speed = _moveSpeed,
             };
 
             state.Dependency = job.ScheduleParallel(state.Dependency);

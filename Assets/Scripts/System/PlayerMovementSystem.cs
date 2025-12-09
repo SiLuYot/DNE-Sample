@@ -3,25 +3,35 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
-using Unity.Transforms;
+using Unity.Physics;
 
 namespace System
 {
-    [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
     [BurstCompile]
+    [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
     public partial struct PlayerMovementSystem : ISystem
     {
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var speed = SystemAPI.Time.DeltaTime * 6;
-            foreach (var (input, trans) in SystemAPI
-                         .Query<RefRO<PlayerInputComponent>, RefRW<LocalTransform>>()
-                         .WithAll<Simulate>())
+            var speed = 6f;
+
+            foreach (var (input, velocity) in SystemAPI
+                         .Query<RefRO<PlayerInputComponent>, RefRW<PhysicsVelocity>>()
+                         .WithAll<Simulate, PlayerComponent>())
             {
-                var moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
-                moveInput = math.normalizesafe(moveInput) * speed;
-                trans.ValueRW.Position += new float3(moveInput.x, 0, moveInput.y);
+                var inputValue = new float3(input.ValueRO.Horizontal, 0, input.ValueRO.Vertical);
+
+                if (math.lengthsq(inputValue) < math.EPSILON)
+                {
+                    velocity.ValueRW.Linear = float3.zero;
+                    velocity.ValueRW.Angular = float3.zero;
+                    continue;
+                }
+
+                var value = math.normalizesafe(inputValue) * speed;
+                velocity.ValueRW.Linear = new float3(value.x, 0, value.z);
+                velocity.ValueRW.Angular = float3.zero;
             }
         }
     }

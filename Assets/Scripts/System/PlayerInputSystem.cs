@@ -16,11 +16,25 @@ namespace System
 
         public void OnUpdate(ref SystemState state)
         {
+            var isHorizontal = Input.GetKey(KeyCode.A) ||
+                               Input.GetKey(KeyCode.D) ||
+                               Input.GetKey(KeyCode.LeftArrow) ||
+                               Input.GetKey(KeyCode.RightArrow);
+
+            var isVertical = Input.GetKey(KeyCode.W) ||
+                             Input.GetKey(KeyCode.S) ||
+                             Input.GetKey(KeyCode.UpArrow) ||
+                             Input.GetKey(KeyCode.DownArrow);
+
             foreach (var playerInput in SystemAPI.Query<RefRW<PlayerInputComponent>>().WithAll<GhostOwnerIsLocal>())
             {
                 playerInput.ValueRW = default;
-                playerInput.ValueRW.Horizontal = Input.GetAxis("Horizontal");
-                playerInput.ValueRW.Vertical = Input.GetAxis("Vertical");
+
+                if (isHorizontal)
+                    playerInput.ValueRW.Horizontal = Input.GetAxis("Horizontal");
+
+                if (isVertical)
+                    playerInput.ValueRW.Vertical = Input.GetAxis("Vertical");
             }
         }
     }

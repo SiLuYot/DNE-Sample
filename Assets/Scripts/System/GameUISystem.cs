@@ -85,7 +85,7 @@ namespace System
                          .WithAll<GhostOwnerIsLocal>()
                          .WithEntityAccess())
             {
-                Camera.main.transform.position = transform.ValueRO.Position + new float3(0, 12f, -5f);
+                Camera.main.transform.position = transform.ValueRO.Position + new float3(0, 13f, -3f);
             }
         }
     }
