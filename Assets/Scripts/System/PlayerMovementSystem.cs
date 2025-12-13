@@ -16,8 +16,8 @@ namespace System
         {
             var speed = 6f;
 
-            foreach (var (input, velocity) in SystemAPI
-                         .Query<RefRO<PlayerInputComponent>, RefRW<PhysicsVelocity>>()
+            foreach (var (input, player, velocity) in SystemAPI
+                         .Query<RefRO<PlayerInputComponent>, RefRW<PlayerComponent>, RefRW<PhysicsVelocity>>()
                          .WithAll<Simulate, PlayerComponent>())
             {
                 var inputValue = new float3(input.ValueRO.Horizontal, 0, input.ValueRO.Vertical);
@@ -29,9 +29,13 @@ namespace System
                     continue;
                 }
 
-                var value = math.normalizesafe(inputValue) * speed;
+                var dir = math.normalizesafe(inputValue);
+                var value = dir * speed;
+
                 velocity.ValueRW.Linear = new float3(value.x, 0, value.z);
                 velocity.ValueRW.Angular = float3.zero;
+
+                player.ValueRW.Direction = dir;
             }
         }
     }

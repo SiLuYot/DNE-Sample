@@ -18,6 +18,7 @@ namespace System
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<PlayerSpawnerComponent>();
+            state.RequireForUpdate<ProjectileSpawnerComponent>();
 
             var builder = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<GoInGameRequest>()
@@ -28,10 +29,12 @@ namespace System
             _networkIdFromEntity = state.GetComponentLookup<NetworkId>(true);
         }
 
-        [BurstCompile]
+        //[BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var prefab = SystemAPI.GetSingleton<PlayerSpawnerComponent>().Player;
+            var projectile = SystemAPI.GetSingleton<ProjectileSpawnerComponent>();
+            
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
             
             _networkIdFromEntity.Update(ref state);
@@ -48,6 +51,7 @@ namespace System
                 commandBuffer.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
                 commandBuffer.SetComponent(player, new PlayerComponent { NetworkId = networkId.Value });
                 commandBuffer.SetComponent(player, new PlayerNameComponent { PlayerName = reqData.ValueRO.PlayerName });
+                commandBuffer.SetComponent(player, new PlayerAttackComponent { AttackCooldown = projectile.AttackCooldown });
 
                 commandBuffer.AppendToBuffer(reqSrc.ValueRO.SourceConnection, new LinkedEntityGroup { Value = player });
                 commandBuffer.DestroyEntity(reqEntity);
