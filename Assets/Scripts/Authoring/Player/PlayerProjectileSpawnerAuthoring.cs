@@ -9,8 +9,8 @@ namespace Authoring.Player
     public class PlayerProjectileSpawnerAuthoring : MonoBehaviour
     {
         [SerializeField] private GameObject _prefab;
-        [SerializeField] private float _attackCooldown = 1f;
-        [SerializeField] private float _speed = 10f;
+        [SerializeField] private float _attackCooldown = 0.5f;
+        [SerializeField] private float _speed = 20f;
         [SerializeField] private float _maxDistance = 100f;
 
         class Baker : Baker<PlayerProjectileSpawnerAuthoring>

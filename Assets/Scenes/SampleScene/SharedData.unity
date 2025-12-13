@@ -635,8 +635,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Authoring.Player.PlayerAttackAuthoring
   _prefab: {fileID: 5069247730618241490, guid: 7cd3287bea1248940b4f6427854015cc, type: 3}
-  _attackCooldown: 1
-  _speed: 10
+  _attackCooldown: 0.5
+  _speed: 20
   _maxDistance: 100
 --- !u!1 &1728765409
 GameObject:

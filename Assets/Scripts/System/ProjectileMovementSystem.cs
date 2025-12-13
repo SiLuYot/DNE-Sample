@@ -1,7 +1,6 @@
 ﻿using Component;
 using Component.Enemy;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
 using Unity.Physics;
@@ -21,6 +20,7 @@ namespace System
         {
             state.RequireForUpdate<NetworkStreamInGame>();
             state.RequireForUpdate<PhysicsWorldSingleton>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
 
             _enemyLookup = state.GetComponentLookup<EnemyComponent>(true);
         }
@@ -28,12 +28,13 @@ namespace System
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            state.Dependency.Complete();
-
             _enemyLookup.Update(ref state);
 
             var deltaTime = SystemAPI.Time.DeltaTime;
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var ecb = SystemAPI
+                .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
+            
             var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
 
             foreach (var (projectile, transform, entity) in SystemAPI
@@ -44,7 +45,6 @@ namespace System
                 var movement = projectile.ValueRO.Direction * projectile.ValueRO.Speed * deltaTime;
                 var nextPos = currentPos + movement;
 
-                // Raycast로 이동 경로상의 충돌 체크
                 var rayInput = new RaycastInput
                 {
                     Start = currentPos,
@@ -57,14 +57,11 @@ namespace System
                     }
                 };
 
-                //physicsWorld.OverlapBox()
-                
                 var hitEnemy = false;
                 if (physicsWorld.CastRay(rayInput, out var hit))
                 {
                     if (_enemyLookup.HasComponent(hit.Entity))
                     {
-                        // 적과 충돌
                         ecb.DestroyEntity(hit.Entity);
                         ecb.DestroyEntity(entity);
                         hitEnemy = true;
@@ -73,19 +70,15 @@ namespace System
 
                 if (!hitEnemy)
                 {
-                    // 충돌하지 않았으면 이동
                     transform.ValueRW.Position = nextPos;
                     projectile.ValueRW.TraveledDistance += projectile.ValueRO.Speed * deltaTime;
 
-                    // 최대 거리 도달 시 제거
                     if (projectile.ValueRO.TraveledDistance >= projectile.ValueRO.MaxDistance)
                     {
                         ecb.DestroyEntity(entity);
                     }
                 }
             }
-
-            ecb.Playback(state.EntityManager);
         }
     }
 }
