@@ -31,7 +31,7 @@ namespace System.Job
                 }
             }
 
-            if (math.distancesq(transform.Position, nearestPos) < 1)
+            if (math.distancesq(transform.Position, nearestPos) < 0.5f)
                 return;
 
             var dir = math.normalizesafe(nearestPos - transform.Position);

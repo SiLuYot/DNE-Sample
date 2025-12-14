@@ -3,39 +3,38 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
-using Unity.Physics;
+using Unity.Transforms;
 
 namespace System
 {
-    [BurstCompile]
     [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+    [BurstCompile]
     public partial struct PlayerMovementSystem : ISystem
     {
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var speed = 6f;
+            float min = -15, max = 15f;
 
-            foreach (var (input, player, velocity) in SystemAPI
-                         .Query<RefRO<PlayerInputComponent>, RefRW<PlayerComponent>, RefRW<PhysicsVelocity>>()
-                         .WithAll<Simulate, PlayerComponent>())
+            foreach (var (input, trans, player) in SystemAPI
+                         .Query<RefRO<PlayerInputComponent>, RefRW<LocalTransform>, RefRW<PlayerComponent>>()
+                         .WithAll<Simulate>())
             {
-                var inputValue = new float3(input.ValueRO.Horizontal, 0, input.ValueRO.Vertical);
+                var inputValue = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
 
-                if (math.lengthsq(inputValue) < math.EPSILON)
-                {
-                    velocity.ValueRW.Linear = float3.zero;
-                    velocity.ValueRW.Angular = float3.zero;
+                if (math.lengthsq(inputValue) < 0.01f)
                     continue;
-                }
 
+                var pos = trans.ValueRO.Position;
                 var dir = math.normalizesafe(inputValue);
-                var value = dir * speed;
+                var value = dir * speed * SystemAPI.Time.DeltaTime;
 
-                velocity.ValueRW.Linear = new float3(value.x, 0, value.z);
-                velocity.ValueRW.Angular = float3.zero;
-
-                player.ValueRW.Direction = dir;
+                var x = math.clamp(pos.x + value.x, min, max);
+                var z = math.clamp(pos.z + value.y, min, max);
+                
+                player.ValueRW.Direction = new float3(dir.x, 0, dir.y);
+                trans.ValueRW.Position = new float3(x, 0, z);
             }
         }
     }
