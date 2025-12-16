@@ -19,7 +19,8 @@ namespace System
         {
             state.RequireForUpdate<PlayerSpawnerComponent>();
             state.RequireForUpdate<ProjectileSpawnerComponent>();
-
+            state.RequireForUpdate<HomingMissileSpawnerComponent>();
+            
             var builder = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<GoInGameRequest>()
                 .WithAll<ReceiveRpcCommandRequest>();
@@ -34,6 +35,7 @@ namespace System
         {
             var prefab = SystemAPI.GetSingleton<PlayerSpawnerComponent>().Player;
             var projectile = SystemAPI.GetSingleton<ProjectileSpawnerComponent>();
+            var missile = SystemAPI.GetSingleton<HomingMissileSpawnerComponent>();
             
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
             
@@ -51,7 +53,8 @@ namespace System
                 commandBuffer.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
                 commandBuffer.SetComponent(player, new PlayerComponent { NetworkId = networkId.Value });
                 commandBuffer.SetComponent(player, new PlayerNameComponent { PlayerName = reqData.ValueRO.PlayerName });
-                commandBuffer.SetComponent(player, new PlayerAttackComponent { AttackCooldown = projectile.AttackCooldown });
+                commandBuffer.SetComponent(player, new PlayerProjectileAttackComponent { AttackCooldown = projectile.AttackCooldown });
+                commandBuffer.SetComponent(player, new PlayerMissileAttackComponent { AttackCooldown = missile.AttackCooldown });
 
                 commandBuffer.AppendToBuffer(reqSrc.ValueRO.SourceConnection, new LinkedEntityGroup { Value = player });
                 commandBuffer.DestroyEntity(reqEntity);

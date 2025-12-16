@@ -14,7 +14,8 @@ namespace Authoring.Player
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<PlayerComponent>(entity);
                 AddComponent<PlayerNameComponent>(entity);
-                AddComponent<PlayerAttackComponent>(entity);
+                AddComponent<PlayerProjectileAttackComponent>(entity);
+                AddComponent<PlayerMissileAttackComponent>(entity);
             }
         }
     }

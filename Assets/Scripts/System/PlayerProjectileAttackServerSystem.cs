@@ -12,7 +12,7 @@ namespace System
     [BurstCompile]
     [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
     [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-    public partial struct PlayerAttackServerSystem : ISystem
+    public partial struct PlayerProjectileAttackServerSystem : ISystem
     {
         [BurstCompile]
         public void OnCreate(ref SystemState state)
@@ -31,7 +31,7 @@ namespace System
             var spawner = SystemAPI.GetSingleton<ProjectileSpawnerComponent>();
 
             foreach (var (attack, player, transform) in SystemAPI
-                         .Query<RefRW<PlayerAttackComponent>, RefRO<PlayerComponent>, RefRO<LocalTransform>>())
+                         .Query<RefRW<PlayerProjectileAttackComponent>, RefRO<PlayerComponent>, RefRO<LocalTransform>>())
             {
                 attack.ValueRW.CurrentCooldown -= deltaTime;
 

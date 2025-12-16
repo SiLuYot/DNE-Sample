@@ -9,7 +9,7 @@ using Unity.Transforms;
 namespace System.Job
 {
     [BurstCompile]
-    public partial struct ChaseJob : IJobEntity
+    public partial struct EnemyChaseJob : IJobEntity
     {
         [ReadOnly] public NativeArray<LocalTransform> PlayerTransforms;
         public float Speed;

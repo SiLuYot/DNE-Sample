@@ -11,7 +11,7 @@ namespace System
 {
     [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
     [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-    public partial struct ChaseServerSystem : ISystem
+    public partial struct EnemyChaseServerSystem : ISystem
     {
         private float _moveSpeed;
         private EntityQuery _playerQuery;
@@ -38,7 +38,7 @@ namespace System
 
             var playerTransforms = _playerQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
 
-            var job = new ChaseJob
+            var job = new EnemyChaseJob
             {
                 PlayerTransforms = playerTransforms,
                 Speed = _moveSpeed,
