@@ -1,65 +1,59 @@
-﻿using Component;
+﻿using System.Job;
+using Component;
 using Component.Enemy;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
-using Unity.Physics;
-using Unity.Physics.Systems;
+using Unity.Transforms;
 
 namespace System
 {
     [BurstCompile]
     [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-    [UpdateInGroup(typeof(PhysicsSystemGroup))]
-    [UpdateAfter(typeof(PhysicsSimulationGroup))]
+    [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+    [UpdateAfter(typeof(ProjectileMovementSystem))]
     public partial struct ProjectileCollisionSystem : ISystem
     {
-        private ComponentLookup<ProjectileComponent> _projectileLookup;
-        private ComponentLookup<EnemyComponent> _enemyLookup;
+        private EntityQuery _enemyQuery;
 
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<NetworkStreamInGame>();
-            state.RequireForUpdate<SimulationSingleton>();
+            state.RequireForUpdate<ProjectileComponent>();
             state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
 
-            _projectileLookup = state.GetComponentLookup<ProjectileComponent>(true);
-            _enemyLookup = state.GetComponentLookup<EnemyComponent>(true);
+            _enemyQuery = SystemAPI.QueryBuilder()
+                .WithAll<EnemyComponent, LocalTransform>()
+                .Build();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            state.Dependency.Complete();
+            if (_enemyQuery.IsEmpty)
+                return;
 
-            _projectileLookup.Update(ref state);
-            _enemyLookup.Update(ref state);
+            var enemyEntities = _enemyQuery.ToEntityArray(Allocator.TempJob);
+            var enemyTransforms = _enemyQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
 
             var ecb = SystemAPI
                 .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged);
+                .CreateCommandBuffer(state.WorldUnmanaged)
+                .AsParallelWriter();
 
-            var simulation = SystemAPI.GetSingleton<SimulationSingleton>();
-            var triggerEvents = simulation.AsSimulation().TriggerEvents;
-
-            foreach (var triggerEvent in triggerEvents)
+            var job = new ProjectileCollisionJob
             {
-                var entityA = triggerEvent.EntityA;
-                var entityB = triggerEvent.EntityB;
+                CollisionRadius = 0.5f,
+                EnemyEntities = enemyEntities,
+                EnemyTransforms = enemyTransforms,
+                Ecb = ecb
+            };
 
-                var isAProjectile = _projectileLookup.HasComponent(entityA);
-                var isBProjectile = _projectileLookup.HasComponent(entityB);
-
-                var isAEnemy = _enemyLookup.HasComponent(entityA);
-                var isBEnemy = _enemyLookup.HasComponent(entityB);
-
-                if ((isAProjectile && isBEnemy) || (isBProjectile && isAEnemy))
-                {
-                    ecb.DestroyEntity(entityA);
-                    ecb.DestroyEntity(entityB);
-                }
-            }
+            state.Dependency = job.ScheduleParallel(state.Dependency);
+            state.Dependency = enemyEntities.Dispose(state.Dependency);
+            state.Dependency = enemyTransforms.Dispose(state.Dependency);
         }
     }
 }
