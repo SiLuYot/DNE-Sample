@@ -55,8 +55,8 @@ namespace System
             var canvasEntity = _canvasQuery.GetSingletonEntity();
             var canvas = EntityManager.GetComponentObject<UICanvasComponent>(canvasEntity).CanvasReference;
 
-            foreach (var (nameComp, entity) in SystemAPI
-                         .Query<RefRO<PlayerNameComponent>>()
+            foreach (var (nameComp, expComp, entity) in SystemAPI
+                         .Query<RefRO<PlayerNameComponent>, RefRO<PlayerExperienceComponent>>()
                          .WithNone<UICleanupComponent>()
                          .WithEntityAccess())
             {
@@ -64,12 +64,13 @@ namespace System
                 var uiScript = uiObj.GetComponent<PlayerNameView>();
 
                 uiScript.SetName(nameComp.ValueRO.PlayerName.ToString());
+                uiScript.SetLevel(expComp.ValueRO.Level);
 
                 ecb.AddComponent(entity, new UICleanupComponent { View = uiScript });
             }
 
-            foreach (var (transform, entity) in SystemAPI
-                         .Query<RefRO<LocalToWorld>>()
+            foreach (var (transform, expComp, entity) in SystemAPI
+                         .Query<RefRO<LocalToWorld>, RefRO<PlayerExperienceComponent>>()
                          .WithAll<UICleanupComponent>()
                          .WithEntityAccess())
             {
@@ -77,6 +78,7 @@ namespace System
                 if (uiRef.View != null)
                 {
                     uiRef.View.UpdatePosition(transform.ValueRO.Position);
+                    uiRef.View.SetLevel(expComp.ValueRO.Level);
                 }
             }
 

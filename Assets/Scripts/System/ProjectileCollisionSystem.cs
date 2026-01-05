@@ -26,6 +26,7 @@ namespace System
 
             _enemyQuery = SystemAPI.QueryBuilder()
                 .WithAll<EnemyComponent, LocalTransform>()
+                .WithNone<EnemyDeadTag>()  // 이미 사망 판정된 적은 제외
                 .Build();
         }
 
@@ -43,12 +44,20 @@ namespace System
                 .CreateCommandBuffer(state.WorldUnmanaged)
                 .AsParallelWriter();
 
+            // 경험치 오브 스포너가 있으면 프리팹 사용, 없으면 Entity.Null
+            var expOrbPrefab = Entity.Null;
+            if (SystemAPI.TryGetSingleton<ExperienceOrbSpawnerComponent>(out var expSpawner))
+            {
+                expOrbPrefab = expSpawner.Prefab;
+            }
+
             var job = new ProjectileCollisionJob
             {
                 CollisionRadius = 0.5f,
                 EnemyEntities = enemyEntities,
                 EnemyTransforms = enemyTransforms,
-                Ecb = ecb
+                Ecb = ecb,
+                ExperienceOrbPrefab = expOrbPrefab
             };
 
             state.Dependency = job.ScheduleParallel(state.Dependency);

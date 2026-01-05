@@ -34,20 +34,30 @@ namespace System
 
             var spawner = SystemAPI.GetSingleton<HomingMissileSpawnerComponent>();
 
-            foreach (var (attack, transform) in SystemAPI
-                         .Query<RefRW<PlayerMissileAttackComponent>, RefRO<LocalTransform>>())
+            foreach (var (attack, input, transform) in SystemAPI
+                         .Query<RefRW<PlayerMissileAttackComponent>, RefRO<PlayerInputComponent>, RefRO<LocalTransform>>())
             {
                 attack.ValueRW.CurrentCooldown -= deltaTime;
 
                 if (attack.ValueRO.CurrentCooldown > 0)
                     continue;
 
-                // 원형으로 미사일 배치
+                // 마우스 조준 방향 가져오기
+                var aimDir = input.ValueRO.AimDirection;
+                if (aimDir.Equals(float3.zero))
+                {
+                    aimDir = new float3(0, 0, 1);
+                }
+
+                // 조준 방향의 각도 계산
+                var baseAngle = math.atan2(aimDir.z, aimDir.x);
+
+                // 미사일을 조준 방향 중심으로 원형으로 배치
                 var angleStep = 360f / spawner.MissileCount;
-                
+
                 for (int i = 0; i < spawner.MissileCount; i++)
                 {
-                    var angle = math.radians(angleStep * i);
+                    var angle = math.radians(angleStep * i) + baseAngle;
                     var offset = new float3(
                         math.cos(angle) * 0.3f,
                         0,
@@ -58,7 +68,7 @@ namespace System
                     var randomHeight = _random.NextFloat(0.5f, 1.5f);
                     var targetHeight = transform.ValueRO.Position.y + spawner.LaunchHeight + randomHeight;
 
-                    // 퍼지는 방향 (방사형)
+                    // 퍼지는 방향 (조준 방향 기준 방사형)
                     var spreadDirection = new float3(
                         math.cos(angle),
                         0,

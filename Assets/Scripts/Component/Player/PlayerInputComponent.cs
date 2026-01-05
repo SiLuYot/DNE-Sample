@@ -1,4 +1,5 @@
-﻿using Unity.NetCode;
+﻿using Unity.Mathematics;
+using Unity.NetCode;
 
 namespace Component.Player
 {
@@ -6,5 +7,6 @@ namespace Component.Player
     {
         public float Horizontal;
         public float Vertical;
+        public float3 AimDirection;  // 마우스 조준 방향
     }
 }

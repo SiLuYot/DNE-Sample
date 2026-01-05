@@ -30,15 +30,16 @@ namespace System
 
             var spawner = SystemAPI.GetSingleton<ProjectileSpawnerComponent>();
 
-            foreach (var (attack, player, transform) in SystemAPI
-                         .Query<RefRW<PlayerProjectileAttackComponent>, RefRO<PlayerComponent>, RefRO<LocalTransform>>())
+            foreach (var (attack, input, transform) in SystemAPI
+                         .Query<RefRW<PlayerProjectileAttackComponent>, RefRO<PlayerInputComponent>, RefRO<LocalTransform>>())
             {
                 attack.ValueRW.CurrentCooldown -= deltaTime;
 
                 if (attack.ValueRO.CurrentCooldown > 0)
                     continue;
 
-                var dir = player.ValueRO.Direction;
+                // 마우스 조준 방향 사용
+                var dir = input.ValueRO.AimDirection;
                 if (dir.Equals(float3.zero))
                 {
                     dir = new float3(0, 0, 1);

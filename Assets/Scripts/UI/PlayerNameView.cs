@@ -8,9 +8,24 @@ namespace UI
     {
         [SerializeField] private TextMeshProUGUI _nameText;
 
+        private string _playerName;
+        private int _level;
+
         public void SetName(string value)
         {
-            _nameText.text = value;
+            _playerName = value;
+            UpdateText();
+        }
+
+        public void SetLevel(int level)
+        {
+            _level = level;
+            UpdateText();
+        }
+
+        private void UpdateText()
+        {
+            _nameText.text = $"Lv.{_level} {_playerName}";
         }
 
         public void UpdatePosition(float3 position)

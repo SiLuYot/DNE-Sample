@@ -5,6 +5,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
+using Unity.Physics;
 using Unity.Transforms;
 
 namespace System
@@ -44,7 +45,13 @@ namespace System
                 Speed = _moveSpeed,
             };
 
-            state.Dependency = job.ScheduleParallel(state.Dependency);
+            // EnemyDeadTag가 없는 Enemy만 처리하도록 쿼리 필터링
+            var query = SystemAPI.QueryBuilder()
+                .WithAll<EnemyComponent, LocalTransform, PhysicsVelocity>()
+                .WithNone<EnemyDeadTag>()
+                .Build();
+
+            state.Dependency = job.ScheduleParallel(query, state.Dependency);
             state.Dependency = playerTransforms.Dispose(state.Dependency);
         }
     }

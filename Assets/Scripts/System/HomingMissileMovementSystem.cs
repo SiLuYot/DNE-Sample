@@ -25,6 +25,7 @@ namespace System
 
             _enemyQuery = SystemAPI.QueryBuilder()
                 .WithAll<EnemyComponent, LocalTransform>()
+                .WithNone<EnemyDeadTag>()  // 이미 사망 판정된 적은 타겟에서 제외
                 .Build();
         }
 
