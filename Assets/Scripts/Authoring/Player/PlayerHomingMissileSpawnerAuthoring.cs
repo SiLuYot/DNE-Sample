@@ -13,7 +13,6 @@ namespace Authoring.Player
         [SerializeField] private float _maxDistance = 100f;
         [SerializeField] private float _turnSpeed = 20f;
         [SerializeField] private float _launchHeight = 6f;
-        [SerializeField] private int _missileCount = 3;
 
         class Baker : Baker<PlayerHomingMissileSpawnerAuthoring>
         {
@@ -29,7 +28,6 @@ namespace Authoring.Player
                     MaxDistance = authoring._maxDistance,
                     TurnSpeed = authoring._turnSpeed,
                     LaunchHeight = authoring._launchHeight,
-                    MissileCount = authoring._missileCount
                 });
             }
         }

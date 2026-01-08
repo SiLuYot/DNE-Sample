@@ -7,7 +7,7 @@ namespace Authoring.Player
     [DisallowMultipleComponent]
     public class PlayerAuthoring : MonoBehaviour
     {
-        public float ExperienceCollectionRadius = 2f;
+        [SerializeField] private float _experienceCollectionRadius = 2f;
 
         class Baker : Baker<PlayerAuthoring>
         {
@@ -16,13 +16,14 @@ namespace Authoring.Player
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<PlayerComponent>(entity);
                 AddComponent<PlayerNameComponent>(entity);
-                AddComponent<PlayerProjectileAttackComponent>(entity);
-                AddComponent<PlayerMissileAttackComponent>(entity);
+                AddComponent(entity, new PlayerProjectileAttackComponent());
+                AddComponent(entity, new PlayerMissileAttackComponent());
                 AddComponent(entity, new PlayerExperienceComponent
                 {
                     CurrentExperience = 0,
-                    Level = 1,  // 초기 레벨은 1
-                    CollectionRadius = authoring.ExperienceCollectionRadius
+                    Level = 1,
+                    LastUpgradedLevel = 0,
+                    CollectionRadius = authoring._experienceCollectionRadius
                 });
             }
         }

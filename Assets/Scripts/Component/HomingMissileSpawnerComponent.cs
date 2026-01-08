@@ -10,6 +10,5 @@ namespace Component
         public float MaxDistance;
         public float TurnSpeed;
         public float LaunchHeight;
-        public int MissileCount;
     }
 }

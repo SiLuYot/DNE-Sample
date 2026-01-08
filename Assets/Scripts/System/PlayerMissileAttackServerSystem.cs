@@ -37,12 +37,14 @@ namespace System
             foreach (var (attack, input, transform) in SystemAPI
                          .Query<RefRW<PlayerMissileAttackComponent>, RefRO<PlayerInputComponent>, RefRO<LocalTransform>>())
             {
+                if (attack.ValueRO.AttackLevel <= 0)
+                    continue;
+
                 attack.ValueRW.CurrentCooldown -= deltaTime;
 
                 if (attack.ValueRO.CurrentCooldown > 0)
                     continue;
 
-                // 마우스 조준 방향 가져오기
                 var aimDir = input.ValueRO.AimDirection;
                 if (aimDir.Equals(float3.zero))
                 {
@@ -52,10 +54,14 @@ namespace System
                 // 조준 방향의 각도 계산
                 var baseAngle = math.atan2(aimDir.z, aimDir.x);
 
-                // 미사일을 조준 방향 중심으로 원형으로 배치
-                var angleStep = 360f / spawner.MissileCount;
+                // 공격 레벨에 따라 미사일 개수 결정
+                var attackLevel = math.max(1, attack.ValueRO.AttackLevel);
+                var missileCount = attackLevel;
 
-                for (int i = 0; i < spawner.MissileCount; i++)
+                // 미사일을 조준 방향 중심으로 원형으로 배치
+                var angleStep = 360f / missileCount;
+
+                for (int i = 0; i < missileCount; i++)
                 {
                     var angle = math.radians(angleStep * i) + baseAngle;
                     var offset = new float3(

@@ -1,5 +1,6 @@
 ﻿using Component.Player;
 using Component.UI;
+using RPC;
 using UI;
 using Unity.Collections;
 using Unity.Entities;
@@ -10,8 +11,7 @@ using UnityEngine;
 
 namespace System
 {
-    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation |
-                       WorldSystemFilterFlags.Presentation)]
+    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
     public partial class GameUISystem : SystemBase
     {
         private EntityQuery _uiConfigQuery;
@@ -49,6 +49,23 @@ namespace System
                 ecb.RemoveComponent<UICleanupComponent>(entity);
             }
 
+            var upgradeCleanupQuery = SystemAPI.QueryBuilder()
+                .WithAll<UIAttackUpgradeCleanupComponent>()
+                .WithNone<PendingAttackUpgradeComponent>()
+                .Build();
+
+            using var upgradeCleanupEntities = upgradeCleanupQuery.ToEntityArray(Allocator.Temp);
+            foreach (var entity in upgradeCleanupEntities)
+            {
+                var cleanupComp = EntityManager.GetComponentObject<UIAttackUpgradeCleanupComponent>(entity);
+                if (cleanupComp.View != null)
+                {
+                    UnityEngine.Object.Destroy(cleanupComp.View.gameObject);
+                }
+
+                ecb.RemoveComponent<UIAttackUpgradeCleanupComponent>(entity);
+            }
+
             var configEntity = _uiConfigQuery.GetSingletonEntity();
             var uiConfig = EntityManager.GetComponentObject<UIConfigComponent>(configEntity);
 
@@ -67,6 +84,57 @@ namespace System
                 uiScript.SetLevel(expComp.ValueRO.Level);
 
                 ecb.AddComponent(entity, new UICleanupComponent { View = uiScript });
+            }
+
+            foreach (var (pending, projectileAttack, missileAttack, entity) in SystemAPI
+                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerProjectileAttackComponent>, RefRO<PlayerMissileAttackComponent>>()
+                         .WithAll<GhostOwnerIsLocal>()
+                         .WithNone<UIAttackUpgradeCleanupComponent>()
+                         .WithEntityAccess())
+            {
+                if (uiConfig.UpgradeViewPrefab == null)
+                    continue;
+
+                var uiObj = UnityEngine.Object.Instantiate(uiConfig.UpgradeViewPrefab, canvas.transform);
+                var uiScript = uiObj.GetComponent<AttackUpgradeView>();
+
+                if (uiScript == null)
+                {
+                    UnityEngine.Object.Destroy(uiObj);
+                    continue;
+                }
+
+                uiScript.Show(projectileAttack.ValueRO.AttackLevel, missileAttack.ValueRO.AttackLevel);
+                ecb.AddComponent(entity, new UIAttackUpgradeCleanupComponent { View = uiScript });
+            }
+
+            foreach (var (pending, projectileAttack, missileAttack, expComp, entity) in SystemAPI
+                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerProjectileAttackComponent>, RefRO<PlayerMissileAttackComponent>, RefRO<PlayerExperienceComponent>>()
+                         .WithAll<GhostOwnerIsLocal, UIAttackUpgradeCleanupComponent>()
+                         .WithEntityAccess())
+            {
+                var upgradeCleanup = EntityManager.GetComponentObject<UIAttackUpgradeCleanupComponent>(entity);
+                if (upgradeCleanup.View == null)
+                    continue;
+
+                if (expComp.ValueRO.LastUpgradedLevel >= pending.ValueRO.LastUpgradedLevel)
+                {
+                    ecb.RemoveComponent<PendingAttackUpgradeComponent>(entity);
+                    continue;
+                }
+
+                if (upgradeCleanup.View.PendingSelection.HasValue)
+                {
+                    var rpcEntity = ecb.CreateEntity();
+                    ecb.AddComponent(rpcEntity, new AttackUpgradeSelectionRequest
+                    {
+                        UpgradeType = upgradeCleanup.View.PendingSelection.Value,
+                        TargetLevel = pending.ValueRO.LastUpgradedLevel
+                    });
+                    ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
+
+                    upgradeCleanup.View.PendingSelection = null;
+                }
             }
 
             foreach (var (transform, expComp, entity) in SystemAPI

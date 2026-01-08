@@ -164,12 +164,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Authoring.Player.PlayerHomingMissileSpawnerAuthoring
   _missilePrefab: {fileID: 5069247730618241490, guid: ceb5c94053638094083c6be2ddb64268, type: 3}
-  _attackCooldown: 3
+  _attackCooldown: 2
   _speed: 15
   _maxDistance: 100
   _turnSpeed: 30
-  _launchHeight: 8
-  _missileCount: 3
+  _launchHeight: 6
 --- !u!1 &718154523
 GameObject:
   m_ObjectHideFlags: 0
@@ -200,8 +199,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Authoring.ExperienceOrbSpawnerAuthoring
   Prefab: {fileID: 847395056827221843, guid: 7c3e8ea69b6f2d1478b4cb2b87a64302, type: 3}
-  ExperienceValue: 10
-  MoveSpeed: 8
 --- !u!4 &718154525
 Transform:
   m_ObjectHideFlags: 0
@@ -307,7 +304,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Authoring.Player.PlayerAttackAuthoring
   _prefab: {fileID: 5069247730618241490, guid: 7cd3287bea1248940b4f6427854015cc, type: 3}
-  _attackCooldown: 0.5
+  _attackCooldown: 1
   _speed: 20
   _maxDistance: 100
 --- !u!1 &1922629720
@@ -321,7 +318,7 @@ GameObject:
   - component: {fileID: 1922629722}
   - component: {fileID: 1922629721}
   m_Layer: 0
-  m_Name: PlayerNameSpawner
+  m_Name: UISpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -340,6 +337,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Authoring.PlayerNameAuthoring
   _namePrefab: {fileID: 6910960412734391993, guid: 37b2b400ba7ae2841b7660ee653d3e81, type: 3}
+  _upgradeSelectPrefab: {fileID: 1906447126683476375, guid: 9d9764a59d0aef14692379b4727f5ea6, type: 3}
 --- !u!4 &1922629722
 Transform:
   m_ObjectHideFlags: 0
@@ -360,7 +358,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1555817723}
-  - {fileID: 1922629722}
   - {fileID: 1647526618}
   - {fileID: 125647901}
   - {fileID: 718154525}
+  - {fileID: 1922629722}

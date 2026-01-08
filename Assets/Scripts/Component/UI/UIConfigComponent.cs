@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using UI;
+using Unity.Entities;
 using UnityEngine;
 
 namespace Component.UI
@@ -6,5 +7,6 @@ namespace Component.UI
     public class UIConfigComponent : IComponentData
     {
         public GameObject NamePrefab;
+        public GameObject UpgradeViewPrefab;
     }
 }
