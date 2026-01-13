@@ -18,6 +18,7 @@ namespace Authoring.Player
                 AddComponent<PlayerNameComponent>(entity);
                 AddComponent(entity, new PlayerProjectileAttackComponent());
                 AddComponent(entity, new PlayerMissileAttackComponent());
+                AddComponent(entity, new PlayerSwordAttackComponent());
                 AddComponent(entity, new PlayerExperienceComponent
                 {
                     CurrentExperience = 0,

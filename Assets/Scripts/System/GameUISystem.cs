@@ -86,8 +86,8 @@ namespace System
                 ecb.AddComponent(entity, new UICleanupComponent { View = uiScript });
             }
 
-            foreach (var (pending, projectileAttack, missileAttack, entity) in SystemAPI
-                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerProjectileAttackComponent>, RefRO<PlayerMissileAttackComponent>>()
+            foreach (var (pending, projectileAttack, missileAttack, swordAttack, entity) in SystemAPI
+                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerProjectileAttackComponent>, RefRO<PlayerMissileAttackComponent>, RefRO<PlayerSwordAttackComponent>>()
                          .WithAll<GhostOwnerIsLocal>()
                          .WithNone<UIAttackUpgradeCleanupComponent>()
                          .WithEntityAccess())
@@ -104,7 +104,7 @@ namespace System
                     continue;
                 }
 
-                uiScript.Show(projectileAttack.ValueRO.AttackLevel, missileAttack.ValueRO.AttackLevel);
+                uiScript.Show(projectileAttack.ValueRO.AttackLevel, missileAttack.ValueRO.AttackLevel, swordAttack.ValueRO.AttackLevel);
                 ecb.AddComponent(entity, new UIAttackUpgradeCleanupComponent { View = uiScript });
             }
 

@@ -22,7 +22,7 @@ namespace System
             state.RequireForUpdate<ProjectileSpawnerComponent>();
         }
 
-        //[BurstCompile]
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
@@ -46,58 +46,25 @@ namespace System
                 {
                     dir = new float3(0, 0, 1);
                 }
+                
+                var projectile = ecb.Instantiate(spawner.Prefab);
 
-                var projectileCount = attack.ValueRO.AttackLevel;
-
-                // 발사체 방향 생성 (중앙 기준으로 좌우 분산)
-                // 레벨 1: 0도
-                // 레벨 2: 0도, +10도
-                // 레벨 3: -10도, 0도, +10도
-                // 레벨 4: -10도, 0도, +10도, +20도
-                // 레벨 5: -20도, -10도, 0도, +10도, +20도
-                for (int i = 0; i < projectileCount; i++)
+                ecb.SetComponent(projectile, new LocalTransform
                 {
-                    float3 projectileDir;
+                    Position = transform.ValueRO.Position,
+                    Rotation = quaternion.LookRotationSafe(dir, math.up()),
+                    Scale = 1f
+                });
 
-                    if (projectileCount == 1)
-                    {
-                        // 레벨 1: 중앙만
-                        projectileDir = dir;
-                    }
-                    else if (projectileCount == 2)
-                    {
-                        // 레벨 2: 0도, +10도
-                        var angle = i * 10f;
-                        projectileDir = math.rotate(quaternion.AxisAngle(math.up(), math.radians(angle)), dir);
-                    }
-                    else
-                    {
-                        // 레벨 3+: 좌우 균등 분산
-                        // 중앙을 기준으로 좌우 번갈아가며 배치
-                        var halfCount = projectileCount / 2;
-                        var index = i - halfCount;
-                        var angle = index * 10f;
-                        projectileDir = math.rotate(quaternion.AxisAngle(math.up(), math.radians(angle)), dir);
-                    }
-
-                    var projectile = ecb.Instantiate(spawner.Prefab);
-
-                    ecb.SetComponent(projectile, new LocalTransform
-                    {
-                        Position = transform.ValueRO.Position,
-                        Rotation = quaternion.LookRotationSafe(projectileDir, math.up()),
-                        Scale = 1f
-                    });
-
-                    ecb.SetComponent(projectile, new ProjectileComponent
-                    {
-                        Speed = spawner.Speed,
-                        MaxDistance = spawner.MaxDistance,
-                        Direction = projectileDir
-                    });
-                }
-
-                attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown;
+                ecb.SetComponent(projectile, new ProjectileComponent
+                {
+                    Speed = spawner.Speed,
+                    MaxDistance = spawner.MaxDistance,
+                    Direction = dir
+                });
+                
+                var attackSpeedMultiplier = 1.0f + (attack.ValueRO.AttackLevel - 1) * 0.5f;
+                attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown / attackSpeedMultiplier;
             }
 
             ecb.Playback(state.EntityManager);

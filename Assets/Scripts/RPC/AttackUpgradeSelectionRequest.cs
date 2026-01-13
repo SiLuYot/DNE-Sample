@@ -11,6 +11,7 @@ namespace RPC
     public enum AttackUpgradeType : byte
     {
         Projectile = 0,
-        Missile = 1
+        Missile = 1,
+        Sword = 2
     }
 }

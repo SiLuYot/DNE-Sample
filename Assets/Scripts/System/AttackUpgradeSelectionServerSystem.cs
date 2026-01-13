@@ -13,6 +13,7 @@ namespace System
         private ComponentLookup<PlayerComponent> _playerLookup;
         private ComponentLookup<PlayerProjectileAttackComponent> _projectileAttackLookup;
         private ComponentLookup<PlayerMissileAttackComponent> _missileAttackLookup;
+        private ComponentLookup<PlayerSwordAttackComponent> _swordAttackLookup;
         private ComponentLookup<PlayerExperienceComponent> _experienceLookup;
 
         public void OnCreate(ref SystemState state)
@@ -26,6 +27,7 @@ namespace System
             _playerLookup = state.GetComponentLookup<PlayerComponent>(true);
             _projectileAttackLookup = state.GetComponentLookup<PlayerProjectileAttackComponent>(false);
             _missileAttackLookup = state.GetComponentLookup<PlayerMissileAttackComponent>(false);
+            _swordAttackLookup = state.GetComponentLookup<PlayerSwordAttackComponent>(false);
             _experienceLookup = state.GetComponentLookup<PlayerExperienceComponent>(false);
         }
 
@@ -34,6 +36,7 @@ namespace System
             _playerLookup.Update(ref state);
             _projectileAttackLookup.Update(ref state);
             _missileAttackLookup.Update(ref state);
+            _swordAttackLookup.Update(ref state);
             _experienceLookup.Update(ref state);
 
             var ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -69,7 +72,7 @@ namespace System
                     var exp = _experienceLookup[playerEntity];
                     var targetLevel = reqData.ValueRO.TargetLevel;
 
-                    bool isMilestone = targetLevel >= 10 && (targetLevel % 10 == 0);
+                    bool isMilestone = targetLevel >= 5 && (targetLevel % 5 == 0);
                     bool alreadyUpgraded = exp.LastUpgradedLevel >= targetLevel;
                     bool levelValid = exp.Level >= targetLevel;
 
@@ -104,6 +107,15 @@ namespace System
                         var attack = _missileAttackLookup[playerEntity];
                         attack.AttackLevel++;
                         _missileAttackLookup[playerEntity] = attack;
+                    }
+                }
+                else if (reqData.ValueRO.UpgradeType == AttackUpgradeType.Sword)
+                {
+                    if (_swordAttackLookup.HasComponent(playerEntity))
+                    {
+                        var attack = _swordAttackLookup[playerEntity];
+                        attack.AttackLevel++;
+                        _swordAttackLookup[playerEntity] = attack;
                     }
                 }
 

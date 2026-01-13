@@ -37,7 +37,7 @@ namespace System
                 if (SystemAPI.HasComponent<PendingAttackUpgradeComponent>(entity))
                     continue;
 
-                bool isMilestone = currentLevel >= 10 && (currentLevel % 10 == 0);
+                bool isMilestone = currentLevel >= 5 && (currentLevel % 5 == 0);
                 bool alreadyUpgraded = lastUpgradedLevel >= currentLevel;
 
                 if (isMilestone && !alreadyUpgraded)

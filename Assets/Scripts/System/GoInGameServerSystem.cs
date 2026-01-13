@@ -20,6 +20,7 @@ namespace System
             state.RequireForUpdate<PlayerSpawnerComponent>();
             state.RequireForUpdate<ProjectileSpawnerComponent>();
             state.RequireForUpdate<HomingMissileSpawnerComponent>();
+            state.RequireForUpdate<SwordSpawnerComponent>();
 
             var builder = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<GoInGameRequest>()
@@ -38,6 +39,7 @@ namespace System
             var prefab = SystemAPI.GetSingleton<PlayerSpawnerComponent>().Player;
             var projectile = SystemAPI.GetSingleton<ProjectileSpawnerComponent>();
             var missile = SystemAPI.GetSingleton<HomingMissileSpawnerComponent>();
+            var sword = SystemAPI.GetSingleton<SwordSpawnerComponent>();
 
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -48,7 +50,7 @@ namespace System
                          .WithAll<GoInGameRequest>()
                          .WithEntityAccess())
             {
-                var attackType = (AttackUpgradeType)random.NextInt(0, 2);
+                var attackType = (AttackUpgradeType)random.NextInt(0, 3);
 
                 commandBuffer.AddComponent<NetworkStreamInGame>(reqSrc.ValueRO.SourceConnection);
 
@@ -69,6 +71,12 @@ namespace System
                     AttackCooldown = missile.AttackCooldown,
                     CurrentCooldown = 0f,
                     AttackLevel = attackType == AttackUpgradeType.Missile ? 1 : 0
+                });
+                commandBuffer.SetComponent(player, new PlayerSwordAttackComponent
+                {
+                    AttackCooldown = sword.AttackCooldown,
+                    CurrentCooldown = 0f,
+                    AttackLevel = attackType == AttackUpgradeType.Sword ? 1 : 0
                 });
 
                 commandBuffer.AppendToBuffer(reqSrc.ValueRO.SourceConnection, new LinkedEntityGroup { Value = player });

@@ -12,6 +12,8 @@ namespace UI
         [SerializeField] private TextMeshProUGUI _projectileText;
         [SerializeField] private Button _missileButton;
         [SerializeField] private TextMeshProUGUI _missileText;
+        [SerializeField] private Button _swordButton;
+        [SerializeField] private TextMeshProUGUI _swordText;
 
         public AttackUpgradeType? PendingSelection { get; set; }
 
@@ -19,13 +21,15 @@ namespace UI
         {
             _projectileButton.onClick.AddListener(OnProjectileSelected);
             _missileButton.onClick.AddListener(OnMissileSelected);
+            _swordButton.onClick.AddListener(OnSwordSelected);
         }
 
-        public void Show(int projectileLevel, int missileLevel)
+        public void Show(int projectileLevel, int missileLevel, int swordLevel)
         {
             _titleText.text = "Select Upgrade!";
             _projectileText.text = $"Normal Attack\n(Lv.{projectileLevel} → Lv.{projectileLevel + 1})";
             _missileText.text = $"Auto Missile Attack\n(Lv.{missileLevel} → Lv.{missileLevel + 1})";
+            _swordText.text = $"Sword Attack\n(Lv.{swordLevel} → Lv.{swordLevel + 1})";
         }
 
         private void OnProjectileSelected()
@@ -36,6 +40,11 @@ namespace UI
         private void OnMissileSelected()
         {
             PendingSelection = AttackUpgradeType.Missile;
+        }
+
+        private void OnSwordSelected()
+        {
+            PendingSelection = AttackUpgradeType.Sword;
         }
     }
 }
