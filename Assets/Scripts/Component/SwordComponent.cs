@@ -10,5 +10,6 @@ namespace Component
         public float RotationSpeed;
         public float CurrentAngle;
         public float3 OwnerPosition;
+        public int Durability;
     }
 }

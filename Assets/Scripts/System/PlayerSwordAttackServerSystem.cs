@@ -50,9 +50,8 @@ namespace System
 
                 // 마우스 방향 기준 시작 각도 (Y축 회전)
                 var baseAngle = math.atan2(aimDir.x, aimDir.z);
-                // -45도에서 시작해서 +45도까지 (총 90도 회전)
-                var swingRange = math.radians(90f);
-                var startAngle = baseAngle - math.radians(45f);
+                var swingRange = math.radians(180f);
+                var startAngle = baseAngle - math.radians(90f);
                 var rotationSpeed = swingRange / spawner.Duration;
 
                 var sword = ecb.Instantiate(spawner.Prefab);
@@ -72,6 +71,7 @@ namespace System
                     RotationSpeed = rotationSpeed,
                     CurrentAngle = startAngle,
                     OwnerPosition = transform.ValueRO.Position,
+                    Durability = attack.ValueRO.AttackLevel,
                 });
 
                 ecb.AddComponent(sword, new SwordOwnerComponent
@@ -79,8 +79,9 @@ namespace System
                     Owner = playerEntity
                 });
 
-                var attackSpeedMultiplier = 1.0f + (attack.ValueRO.AttackLevel - 1) * 0.2f;
-                attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown / attackSpeedMultiplier;
+                // var attackSpeedMultiplier = 1.0f + (attack.ValueRO.AttackLevel - 1) * 0.2f;
+                // attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown / attackSpeedMultiplier;
+                attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown;
             }
 
             ecb.Playback(state.EntityManager);

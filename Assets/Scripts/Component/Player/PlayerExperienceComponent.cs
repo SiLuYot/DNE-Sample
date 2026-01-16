@@ -3,7 +3,7 @@ using Unity.NetCode;
 
 namespace Component.Player
 {
-    [GhostComponent(PrefabType = GhostPrefabType.AllPredicted)]
+    [GhostComponent(PrefabType = GhostPrefabType.All)]
     public struct PlayerExperienceComponent : IComponentData
     {
         [GhostField] public int CurrentExperience;

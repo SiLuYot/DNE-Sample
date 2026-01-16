@@ -8,5 +8,6 @@ namespace Component.UI
     {
         public GameObject NamePrefab;
         public GameObject UpgradeViewPrefab;
+        public GameObject DeathViewPrefab;
     }
 }

@@ -9,6 +9,7 @@ namespace Authoring.Player
     {
         [SerializeField] private GameObject _namePrefab;
         [SerializeField] private GameObject _upgradeSelectPrefab;
+        [SerializeField] private GameObject _deathViewPrefab;
 
         class Baker : Baker<PlayerUIAuthoring>
         {
@@ -18,7 +19,8 @@ namespace Authoring.Player
                 AddComponentObject(entity, new UIConfigComponent
                 {
                     NamePrefab = authoring._namePrefab,
-                    UpgradeViewPrefab = authoring._upgradeSelectPrefab
+                    UpgradeViewPrefab = authoring._upgradeSelectPrefab,
+                    DeathViewPrefab = authoring._deathViewPrefab
                 });
             }
         }

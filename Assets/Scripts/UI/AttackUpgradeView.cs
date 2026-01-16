@@ -26,10 +26,10 @@ namespace UI
 
         public void Show(int projectileLevel, int missileLevel, int swordLevel)
         {
-            _titleText.text = "Select Upgrade!";
-            _projectileText.text = $"Normal Attack\n(Lv.{projectileLevel} → Lv.{projectileLevel + 1})";
-            _missileText.text = $"Auto Missile Attack\n(Lv.{missileLevel} → Lv.{missileLevel + 1})";
-            _swordText.text = $"Sword Attack\n(Lv.{swordLevel} → Lv.{swordLevel + 1})";
+            _titleText.text = "Select Attack Upgrade!";
+            _projectileText.text = $"Bullet\n(Lv.{projectileLevel} → Lv.{projectileLevel + 1})";
+            _missileText.text = $"Auto Missile\n(Lv.{missileLevel} → Lv.{missileLevel + 1})";
+            _swordText.text = $"Sword\n(Lv.{swordLevel} → Lv.{swordLevel + 1})";
         }
 
         private void OnProjectileSelected()

@@ -6475,8 +6475,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a889c3ae8f2491dbf4709fd54623336, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HostCanKickPlayers: 1
-  PlayersCanBeMuted: 1
+  HostCanKickPlayers: 0
+  PlayersCanBeMuted: 0
   ListItem: {fileID: 1996812601000315678}
   ContentRoot: {fileID: 2129925976934585193}
 --- !u!114 &6790446628006029427
@@ -6800,10 +6800,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3

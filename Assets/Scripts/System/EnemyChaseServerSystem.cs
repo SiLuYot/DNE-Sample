@@ -20,7 +20,7 @@ namespace System
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            _moveSpeed = 4f;
+            _moveSpeed = 3f;
 
             state.RequireForUpdate<NetworkStreamInGame>();
             state.RequireForUpdate<EnemyComponent>();
