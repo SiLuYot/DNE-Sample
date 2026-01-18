@@ -7,6 +7,6 @@ namespace Component.Player
     {
         public float Horizontal;
         public float Vertical;
-        public float3 AimDirection;  // 마우스 조준 방향
+        public float3 AimDirection;
     }
 }

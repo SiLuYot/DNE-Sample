@@ -1,5 +1,4 @@
-﻿using Component;
-using Component.Player;
+﻿using Component.Projectile;
 using Unity.Entities;
 using UnityEngine;
 

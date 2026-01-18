@@ -126,7 +126,7 @@ namespace System
                 if (upgradeCleanup.View.PendingSelection.HasValue)
                 {
                     var rpcEntity = ecb.CreateEntity();
-                    ecb.AddComponent(rpcEntity, new AttackUpgradeSelectionRequest
+                    ecb.AddComponent(rpcEntity, new AttackUpgradeRequest
                     {
                         UpgradeType = upgradeCleanup.View.PendingSelection.Value,
                         TargetLevel = pending.ValueRO.LastUpgradedLevel

@@ -1,5 +1,5 @@
-using RPC;
 using TMPro;
+using Type;
 using UnityEngine;
 using UnityEngine.UI;
 

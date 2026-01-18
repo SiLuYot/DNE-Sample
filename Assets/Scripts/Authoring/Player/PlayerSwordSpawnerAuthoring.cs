@@ -1,4 +1,4 @@
-using Component;
+using Component.Sword;
 using Unity.Entities;
 using UnityEngine;
 

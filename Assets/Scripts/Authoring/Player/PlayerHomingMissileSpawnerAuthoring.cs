@@ -1,4 +1,4 @@
-﻿using Component;
+﻿using Component.HomingMissile;
 using Unity.Entities;
 using UnityEngine;
 
