@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**DNE-Sample** is a multiplayer top-down shooter built with Unity DOTS (Data-Oriented Technology Stack). It demonstrates modern Unity ECS architecture with client-server netcode, showcasing homing missiles, enemy AI, and client-side prediction.
+**DNE-Sample** is a multiplayer top-down shooter built with Unity DOTS (Data-Oriented Technology Stack). It demonstrates modern Unity ECS architecture with client-server netcode, featuring experience/leveling systems, multiple attack types, and client-side prediction.
 
 **Tech Stack:**
 - Unity 6000.2.13f1
@@ -45,12 +45,32 @@ Unity tests can be run through the Test Runner:
 
 ```
 Assets/Scripts/
-├── Authoring/          # GameObject → Entity conversion (bakers)
-├── Component/          # ECS components (pure data)
-├── System/             # ECS systems (game logic)
-│   └── Job/           # Parallel processing jobs
-├── RPC/               # Remote Procedure Calls
-└── UI/                # MonoBehaviour UI scripts
+├── Authoring/              # GameObject → Entity conversion (bakers)
+│   ├── Enemy/             # EnemyAuthoring, EnemySpawnerAuthoring, EnemySpawnPointAuthoring
+│   ├── Experience/        # ExperienceOrbAuthoring, ExperienceOrbSpawnerAuthoring
+│   ├── HomingMissile/     # HomingMissileAuthoring
+│   ├── Player/            # PlayerAuthoring, PlayerInputAuthoring, spawner authorings
+│   ├── Projectile/        # ProjectileAuthoring
+│   └── Sword/             # SwordAuthoring
+├── Component/              # ECS components (pure data)
+│   ├── Enemy/             # EnemyComponent, EnemyDeadTag, EnemyKnockbackComponent
+│   ├── Experience/        # ExperienceOrbComponent, ExperienceOrbSpawnerComponent
+│   ├── HomingMissile/     # HomingMissileComponent, HomingMissileSpawnerComponent
+│   ├── Player/            # PlayerComponent, PlayerInputComponent, attack components
+│   ├── Projectile/        # ProjectileComponent, ProjectileSpawnerComponent
+│   ├── Sword/             # SwordComponent, SwordOwnerComponent, SwordSpawnerComponent
+│   └── UI/                # UI-related components
+├── System/                 # ECS systems (game logic)
+│   ├── Enemy/             # Spawn, chase, knockback, death systems
+│   ├── Experience/        # Collection, movement systems
+│   ├── GoInGame/          # Client/server connection systems
+│   ├── HomingMissile/     # Attack, movement, collision systems
+│   ├── Player/            # Input, movement, death, respawn, level systems
+│   ├── Projectile/        # Attack, movement, collision systems
+│   └── Sword/             # Attack, movement, trigger systems
+├── RPC/                    # Remote Procedure Calls
+├── Type/                   # Enums and type definitions
+└── UI/                     # MonoBehaviour UI scripts
 ```
 
 ### Key Architectural Patterns
@@ -62,10 +82,11 @@ Assets/Scripts/
 
 **2. Namespace Convention:**
 ```csharp
-namespace Component.Player { }  // Components
-namespace System { }            // Systems
-namespace Authoring.Player { }  // Authoring
-namespace RPC { }              // RPCs
+namespace Component.Player { }     // Components
+namespace System.Player { }        // Systems (categorized by feature)
+namespace Authoring.Player { }     // Authoring
+namespace RPC { }                  // RPCs
+namespace Type { }                 // Enums and types
 ```
 
 **3. Burst Compilation:**
@@ -82,9 +103,8 @@ public partial struct PlayerMovementSystem : ISystem
 **4. Parallel Processing:**
 Performance-critical logic uses `IJobEntity`:
 ```csharp
-// Example from ProjectileMovementJob.cs
 [BurstCompile]
-public partial struct ProjectileMovementJob : IJobEntity
+public partial struct ProjectileMovementServerJob : IJobEntity
 {
     public float DeltaTime;
     public void Execute(RefRW<LocalTransform> trans, in ProjectileComponent projectile) { }
@@ -98,13 +118,13 @@ public partial struct ProjectileMovementJob : IJobEntity
 1. **Input System**: `PlayerInputComponent` implements `IInputComponentData` for replicated input
 2. **Prediction**: Systems in `PredictedSimulationSystemGroup` run on both client and server
 3. **Authority**: Combat resolution is server-authoritative (systems with `[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]`)
-4. **Ghost Replication**: Players/enemies are ghosts synchronized across clients
+4. **Ghost Replication**: Players/enemies/experience orbs are ghosts synchronized across clients
 
 **Connection Flow:**
 ```
 Client → GoInGameClientSystem creates RPC
        → Server GoInGameServerSystem receives RPC
-       → Server spawns player entity
+       → Server spawns player entity with attack components
        → Server sets GhostOwner component
        → Player ghost replicates to all clients
 ```
@@ -113,8 +133,8 @@ Client → GoInGameClientSystem creates RPC
 
 - **Main Scene**: `Assets/Scenes/SampleScene.unity` (contains UI, camera, lighting)
 - **SubScenes** (DOTS entities, baked at build time):
-  - `PlayerSubScene.unity` (player spawner, projectile/missile prefabs)
-  - `EnemySubScene.unity` (enemy spawner, spawn points)
+  - `PlayerSubScene.unity` (player spawner, projectile/missile/sword prefabs)
+  - `EnemySubScene.unity` (enemy spawner, spawn points, experience orb spawner)
 
 SubScenes are loaded/unloaded at runtime and contain pure ECS entities.
 
@@ -122,31 +142,40 @@ SubScenes are loaded/unloaded at runtime and contain pure ECS entities.
 
 ### Adding a New Component
 
-1. Create component struct in `Assets/Scripts/Component/`:
+1. Create component struct in `Assets/Scripts/Component/{Category}/`:
 ```csharp
 using Unity.Entities;
+using Unity.NetCode;
 
-public struct MyComponent : IComponentData
+namespace Component.MyFeature
 {
-    public float Speed;
+    [GhostComponent(PrefabType = GhostPrefabType.All)]  // If needs replication
+    public struct MyComponent : IComponentData
+    {
+        [GhostField] public float Speed;  // Replicated field
+        public float LocalOnlyData;       // Not replicated
+    }
 }
 ```
 
-2. Create authoring script in `Assets/Scripts/Authoring/`:
+2. Create authoring script in `Assets/Scripts/Authoring/{Category}/`:
 ```csharp
 using Unity.Entities;
 using UnityEngine;
 
-public class MyAuthoring : MonoBehaviour
+namespace Authoring.MyFeature
 {
-    public float Speed = 5f;
-
-    class Baker : Baker<MyAuthoring>
+    public class MyAuthoring : MonoBehaviour
     {
-        public override void Bake(MyAuthoring authoring)
+        public float Speed = 5f;
+
+        class Baker : Baker<MyAuthoring>
         {
-            var entity = GetEntity(TransformUsageFlags.Dynamic);
-            AddComponent(entity, new MyComponent { Speed = authoring.Speed });
+            public override void Bake(MyAuthoring authoring)
+            {
+                var entity = GetEntity(TransformUsageFlags.Dynamic);
+                AddComponent(entity, new MyComponent { Speed = authoring.Speed });
+            }
         }
     }
 }
@@ -161,20 +190,30 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.NetCode;
 
-namespace System
+namespace System.MyFeature
 {
-    // Choose appropriate update group and world filter
     [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation)]
+    [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]  // Server only
     [BurstCompile]
-    public partial struct MySystem : ISystem
+    public partial struct MyServerSystem : ISystem
     {
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<NetworkStreamInGame>();
+            state.RequireForUpdate<MyComponent>();
+        }
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (myComp, trans) in SystemAPI
+            var ecb = SystemAPI
+                .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
+
+            foreach (var (myComp, trans, entity) in SystemAPI
                 .Query<RefRW<MyComponent>, RefRW<LocalTransform>>()
-                .WithAll<Simulate>())  // Required for predicted entities
+                .WithEntityAccess())
             {
                 // System logic here
             }
@@ -203,51 +242,63 @@ namespace System
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation)]
 ```
 
-### Working with Jobs
-
-For performance-critical code, extract logic to jobs:
+### Adding a New RPC
 
 ```csharp
-// In System file
-public void OnUpdate(ref SystemState state)
-{
-    new MyJob
-    {
-        DeltaTime = SystemAPI.Time.DeltaTime
-    }.ScheduleParallel();
-}
+using Unity.NetCode;
 
-[BurstCompile]
-public partial struct MyJob : IJobEntity
+namespace RPC
 {
-    public float DeltaTime;
-
-    public void Execute(RefRW<LocalTransform> trans, in MyComponent comp)
+    public struct MyRequest : IRpcCommand
     {
-        // Parallel execution per entity
+        public int SomeData;
     }
+}
+```
+
+Processing RPC on server:
+```csharp
+foreach (var (reqSrc, reqData, reqEntity) in SystemAPI
+    .Query<RefRO<ReceiveRpcCommandRequest>, RefRO<MyRequest>>()
+    .WithEntityAccess())
+{
+    var networkId = SystemAPI.GetComponent<NetworkId>(reqSrc.ValueRO.SourceConnection);
+    // Process request...
+    ecb.DestroyEntity(reqEntity);
 }
 ```
 
 ## Gameplay Systems Reference
 
 ### Player Systems
-- **PlayerInputSystem** - Captures WASD/arrow keys
-- **PlayerMovementSystem** - Predicted movement with boundary constraints (-15 to 15 units)
-- **PlayerProjectileAttackServerSystem** - Spawns 3 projectiles at 10° spread
-- **PlayerMissileAttackServerSystem** - Spawns homing missiles
+- **PlayerInputSystem** - Captures WASD/arrow keys and aim direction
+- **PlayerMovementSystem** - Predicted movement with boundary constraints (-15 to 15 units), speed 6 units/sec
+- **PlayerLevelClientSystem** - Detects level milestones (every 5 levels) and triggers upgrade UI
+- **PlayerDeathServerSystem** - Handles player death, sends RPC to client
+- **PlayerRespawnServerSystem** - Processes respawn requests
+- **PlayerEnemyTriggerServerSystem** - Detects collision between player and enemies
 
 ### Enemy Systems
-- **EnemySpawnServerSystem** - Spawns enemies every 3 seconds
-- **EnemyChaseServerSystem** - Enemies chase nearest player at 4 units/sec
+- **EnemySpawnServerSystem** - Spawns enemies periodically from spawn points
+- **EnemyChaseServerSystem** - Enemies chase nearest player
+- **EnemyKnockbackServerSystem** - Applies knockback when enemies are hit
+- **EnemyDeathServerSystem** - Handles enemy death and spawns experience orbs
 
-### Combat Systems
-- **ProjectileMovementSystem** - Linear projectile movement
-- **ProjectileCollisionSystem** - Collision detection with enemies
-- **HomingMissileMovementSystem** - Two-phase missile behavior:
-  - Launch phase: Arcs upward to launch height
-  - Tracking phase: Homes in on nearest enemy
-- **HomingMissileCollisionSystem** - Missile collision and destruction
+### Attack Systems
+- **ProjectileAttackServerSystem** - Spawns multiple projectiles in spread pattern
+- **ProjectileMovementServerSystem** - Linear projectile movement
+- **ProjectileCollisionServerSystem** - Projectile-enemy collision detection
+- **HomingMissileAttackServerSystem** - Auto-fires homing missiles periodically
+- **HomingMissileMovementServerSystem** - Two-phase missile behavior (launch arc → tracking)
+- **HomingMissileCollisionServerSystem** - Missile-enemy collision
+- **SwordAttackServerSystem** - Spawns rotating sword around player
+- **SwordMovementServerSystem** - Sword rotation following player
+- **SwordTriggerServerSystem** - Sword-enemy collision with durability
+
+### Experience & Upgrade Systems
+- **ExperienceMovementServerSystem** - Experience orbs move toward nearby players
+- **ExperienceCollectionServerSystem** - Orb collection and level calculation (100 exp per level)
+- **AttackUpgradeServerSystem** - Processes upgrade selection RPC (Projectile/Missile/Sword)
 
 ### Utility Systems
 - **PhysicsConstraintSystem** - Locks all physics to Y=0 (2D plane constraint)
@@ -256,12 +307,24 @@ public partial struct MyJob : IJobEntity
 ## Important Code Locations
 
 - **Player Input**: `Assets/Scripts/Component/Player/PlayerInputComponent.cs` (implements `IInputComponentData`)
-- **RPC Definition**: `Assets/Scripts/RPC/GoInGameRequest.cs` (client join request)
+- **Attack Components**:
+  - `PlayerProjectileAttackComponent.cs` - Projectile attack level/cooldown
+  - `PlayerMissileAttackComponent.cs` - Missile attack level/cooldown
+  - `PlayerSwordAttackComponent.cs` - Sword attack level/cooldown
+- **Experience**: `PlayerExperienceComponent.cs` - CurrentExperience, Level, LastUpgradedLevel
+- **Upgrade Types**: `Assets/Scripts/Type/AttackUpgradeType.cs` (Projectile, Missile, Sword)
+- **RPC Definitions**:
+  - `GoInGameRequest.cs` - Client join request with player name
+  - `AttackUpgradeRequest.cs` - Upgrade selection
+  - `PlayerDeathRequest.cs` / `PlayerRespawnRequest.cs` - Death/respawn flow
 - **Connection Handling**:
-  - `Assets/Scripts/System/GoInGameClientSystem.cs` (client-side)
-  - `Assets/Scripts/System/GoInGameServerSystem.cs` (server-side)
-- **Rendering Settings**: `Assets/Settings/` (separate PC/Mobile URP assets)
-- **Input Actions**: `Assets/InputSystem_Actions.inputactions`
+  - `Assets/Scripts/System/GoInGame/GoInGameClientSystem.cs`
+  - `Assets/Scripts/System/GoInGame/GoInGameServerSystem.cs`
+- **UI Scripts**:
+  - `GameView.cs` - Lobby/in-game UI switching
+  - `AttackUpgradeView.cs` - Upgrade selection UI
+  - `DeathView.cs` - Death/respawn UI
+  - `PlayerNameView.cs` - Floating name tags
 
 ## Unity Services Integration
 
@@ -284,6 +347,7 @@ Player names are passed via `GoInGameRequest` RPC and displayed above characters
 - Check that ghosts have `GhostAuthoringComponent` in the prefab
 - Ensure input components implement `IInputComponentData`
 - Use `WithAll<Simulate>()` in queries for predicted entities
+- Check `GhostField` attributes on components that need replication
 
 ### Build Errors
 - DOTS requires Burst compilation - check for Burst errors in Console
@@ -294,3 +358,4 @@ Player names are passed via `GoInGameRequest` RPC and displayed above characters
 - Move hot-path code to `IJobEntity` for parallel execution
 - Use `[BurstCompile]` on systems and jobs
 - Check `SystemAPI.Query<>` uses `RefRO<>` for read-only, `RefRW<>` for write access
+- Use `EntityCommandBuffer` from `EndSimulationEntityCommandBufferSystem` for deferred structural changes
