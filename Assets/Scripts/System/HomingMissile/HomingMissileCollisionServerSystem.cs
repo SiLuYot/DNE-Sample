@@ -1,5 +1,4 @@
-﻿using Component.Enemy;
-using Component.Experience;
+using Component.Enemy;
 using Component.HomingMissile;
 using Unity.Burst;
 using Unity.Collections;
@@ -44,19 +43,12 @@ namespace System.HomingMissile
                 .CreateCommandBuffer(state.WorldUnmanaged)
                 .AsParallelWriter();
 
-            var expOrbPrefab = Entity.Null;
-            if (SystemAPI.TryGetSingleton<ExperienceOrbSpawnerComponent>(out var expSpawner))
-            {
-                expOrbPrefab = expSpawner.Prefab;
-            }
-
             var job = new HomingMissileCollisionServerJob
             {
                 CollisionRadius = 0.5f,
                 EnemyEntities = enemyEntities,
                 EnemyTransforms = enemyTransforms,
-                Ecb = ecb,
-                ExperienceOrbPrefab = expOrbPrefab
+                Ecb = ecb
             };
 
             state.Dependency = job.ScheduleParallel(state.Dependency);

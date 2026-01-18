@@ -1,4 +1,4 @@
-﻿using Component.Enemy;
+using Component.Enemy;
 using Component.HomingMissile;
 using Unity.Burst;
 using Unity.Collections;
@@ -15,7 +15,6 @@ namespace System.HomingMissile
         [ReadOnly] public NativeArray<Entity> EnemyEntities;
         [ReadOnly] public NativeArray<LocalTransform> EnemyTransforms;
         public EntityCommandBuffer.ParallelWriter Ecb;
-        public Entity ExperienceOrbPrefab;
 
         private void Execute(
             Entity missileEntity,
@@ -38,19 +37,7 @@ namespace System.HomingMissile
 
                 if (distanceSq <= collisionRadiusSq)
                 {
-                    if (ExperienceOrbPrefab != Entity.Null)
-                    {
-                        var expOrb = Ecb.Instantiate(sortKey, ExperienceOrbPrefab);
-                        Ecb.SetComponent(sortKey, expOrb, new LocalTransform
-                        {
-                            Position = enemyPos,
-                            Rotation = quaternion.identity,
-                            Scale = 1f
-                        });
-                    }
-
                     Ecb.AddComponent<EnemyDeadTag>(sortKey, enemyEntity);
-
                     Ecb.DestroyEntity(sortKey, missileEntity);
                     return;
                 }

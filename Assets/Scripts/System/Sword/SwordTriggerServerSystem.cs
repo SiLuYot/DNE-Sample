@@ -1,5 +1,4 @@
 using Component.Enemy;
-using Component.Experience;
 using Component.Sword;
 using Unity.Burst;
 using Unity.Entities;
@@ -53,12 +52,6 @@ namespace System.Sword
                 .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged);
 
-            var expOrbPrefab = Entity.Null;
-            if (SystemAPI.TryGetSingleton<ExperienceOrbSpawnerComponent>(out var expSpawner))
-            {
-                expOrbPrefab = expSpawner.Prefab;
-            }
-
             var simulation = SystemAPI.GetSingleton<SimulationSingleton>();
 
             state.Dependency = new SwordTriggerServerJob
@@ -69,8 +62,7 @@ namespace System.Sword
                 EnemyDeadLookup = _enemyDeadLookup,
                 EnemyKnockbackLookup = _enemyKnockbackLookup,
                 TransformLookup = _transformLookup,
-                Ecb = ecb,
-                ExperienceOrbPrefab = expOrbPrefab
+                Ecb = ecb
             }.Schedule(simulation, state.Dependency);
         }
     }

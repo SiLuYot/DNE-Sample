@@ -1,4 +1,4 @@
-﻿using Component.Player;
+using Component.Player;
 using Component.UI;
 using RPC;
 using UI;
@@ -6,21 +6,26 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Services.Authentication;
 using Unity.Transforms;
 using UnityEngine;
 
 namespace System
 {
-    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
+    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
     public partial class GameUISystem : SystemBase
     {
         private EntityQuery _uiConfigQuery;
         private EntityQuery _canvasQuery;
+        private EntityQuery _connectedQuery;
 
         protected override void OnCreate()
         {
             _uiConfigQuery = GetEntityQuery(ComponentType.ReadOnly<UIConfigComponent>());
             _canvasQuery = GetEntityQuery(ComponentType.ReadOnly<UICanvasTag>());
+            _connectedQuery = SystemAPI.QueryBuilder()
+                .WithAny<NetworkStreamConnection>()
+                .Build();
 
             RequireForUpdate(_uiConfigQuery);
             RequireForUpdate(_canvasQuery);
@@ -32,89 +37,142 @@ namespace System
                 .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(World.Unmanaged);
 
-            var cleanupQuery = SystemAPI.QueryBuilder()
-                .WithAll<UICleanupComponent>()
-                .WithNone<LocalToWorld>()
-                .Build();
-
-            using var cleanupEntities = cleanupQuery.ToEntityArray(Allocator.Temp);
-            foreach (var entity in cleanupEntities)
-            {
-                var cleanupComp = EntityManager.GetComponentObject<UICleanupComponent>(entity);
-                if (cleanupComp.View != null)
-                {
-                    UnityEngine.Object.Destroy(cleanupComp.View.gameObject);
-                }
-
-                ecb.RemoveComponent<UICleanupComponent>(entity);
-            }
-
-            var upgradeCleanupQuery = SystemAPI.QueryBuilder()
-                .WithAll<UIAttackUpgradeCleanupComponent>()
-                .WithNone<PendingAttackUpgradeComponent>()
-                .Build();
-
-            using var upgradeCleanupEntities = upgradeCleanupQuery.ToEntityArray(Allocator.Temp);
-            foreach (var entity in upgradeCleanupEntities)
-            {
-                var cleanupComp = EntityManager.GetComponentObject<UIAttackUpgradeCleanupComponent>(entity);
-                if (cleanupComp.View != null)
-                {
-                    UnityEngine.Object.Destroy(cleanupComp.View.gameObject);
-                }
-
-                ecb.RemoveComponent<UIAttackUpgradeCleanupComponent>(entity);
-            }
-
             var configEntity = _uiConfigQuery.GetSingletonEntity();
             var uiConfig = EntityManager.GetComponentObject<UIConfigComponent>(configEntity);
 
             var canvasEntity = _canvasQuery.GetSingletonEntity();
             var canvas = EntityManager.GetComponentObject<UICanvasComponent>(canvasEntity).CanvasReference;
 
+            CleanupPlayerNameUI(ecb);
+            CleanupUpgradeUI(ecb);
+
+            if (_connectedQuery.IsEmpty)
+            {
+                CleanupDeathUI(ecb);
+                return;
+            }
+
+            UpdatePlayerNameUI(ecb, uiConfig, canvas);
+            UpdateUpgradeUI(ecb, uiConfig, canvas);
+            UpdateDeathUI(ecb, uiConfig, canvas);
+            UpdateCamera();
+        }
+
+        private void CleanupPlayerNameUI(EntityCommandBuffer ecb)
+        {
+            var query = SystemAPI.QueryBuilder()
+                .WithAll<UICleanupComponent>()
+                .WithNone<LocalToWorld>()
+                .Build();
+
+            using var entities = query.ToEntityArray(Allocator.Temp);
+            foreach (var entity in entities)
+            {
+                var cleanup = EntityManager.GetComponentObject<UICleanupComponent>(entity);
+                if (cleanup.View != null)
+                    UnityEngine.Object.Destroy(cleanup.View.gameObject);
+
+                ecb.RemoveComponent<UICleanupComponent>(entity);
+            }
+        }
+
+        private void CleanupUpgradeUI(EntityCommandBuffer ecb)
+        {
+            var query = SystemAPI.QueryBuilder()
+                .WithAll<UIAttackUpgradeCleanupComponent>()
+                .WithNone<PendingAttackUpgradeComponent>()
+                .Build();
+
+            using var entities = query.ToEntityArray(Allocator.Temp);
+            foreach (var entity in entities)
+            {
+                var cleanup = EntityManager.GetComponentObject<UIAttackUpgradeCleanupComponent>(entity);
+                if (cleanup.View != null)
+                    UnityEngine.Object.Destroy(cleanup.View.gameObject);
+
+                ecb.RemoveComponent<UIAttackUpgradeCleanupComponent>(entity);
+            }
+        }
+
+        private void CleanupDeathUI(EntityCommandBuffer ecb)
+        {
+            var query = SystemAPI.QueryBuilder()
+                .WithAll<UIDeathCleanupComponent>()
+                .Build();
+
+            using var entities = query.ToEntityArray(Allocator.Temp);
+            foreach (var entity in entities)
+            {
+                var cleanup = EntityManager.GetComponentObject<UIDeathCleanupComponent>(entity);
+                if (cleanup.View != null)
+                    UnityEngine.Object.Destroy(cleanup.View.gameObject);
+
+                ecb.RemoveComponent<UIDeathCleanupComponent>(entity);
+            }
+        }
+
+        private void UpdatePlayerNameUI(EntityCommandBuffer ecb, UIConfigComponent uiConfig, Canvas canvas)
+        {
             foreach (var (nameComp, expComp, entity) in SystemAPI
                          .Query<RefRO<PlayerNameComponent>, RefRO<PlayerExperienceComponent>>()
                          .WithNone<UICleanupComponent>()
                          .WithEntityAccess())
             {
                 var uiObj = UnityEngine.Object.Instantiate(uiConfig.NamePrefab, canvas.transform);
-                var uiScript = uiObj.GetComponent<PlayerNameView>();
+                var view = uiObj.GetComponent<PlayerNameView>();
 
-                uiScript.SetName(nameComp.ValueRO.PlayerName.ToString());
-                uiScript.SetLevel(expComp.ValueRO.Level);
+                view.SetName(nameComp.ValueRO.PlayerName.ToString());
+                view.SetLevel(expComp.ValueRO.Level);
 
-                ecb.AddComponent(entity, new UICleanupComponent { View = uiScript });
+                ecb.AddComponent(entity, new UICleanupComponent { View = view });
             }
 
-            foreach (var (pending, projectileAttack, missileAttack, swordAttack, entity) in SystemAPI
-                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerProjectileAttackComponent>, RefRO<PlayerMissileAttackComponent>, RefRO<PlayerSwordAttackComponent>>()
+            foreach (var (transform, expComp, entity) in SystemAPI
+                         .Query<RefRO<LocalToWorld>, RefRO<PlayerExperienceComponent>>()
+                         .WithAll<UICleanupComponent>()
+                         .WithEntityAccess())
+            {
+                var cleanup = EntityManager.GetComponentObject<UICleanupComponent>(entity);
+                if (cleanup.View != null)
+                {
+                    cleanup.View.UpdatePosition(transform.ValueRO.Position);
+                    cleanup.View.SetLevel(expComp.ValueRO.Level);
+                }
+            }
+        }
+
+        private void UpdateUpgradeUI(EntityCommandBuffer ecb, UIConfigComponent uiConfig, Canvas canvas)
+        {
+            if (uiConfig.UpgradeViewPrefab == null)
+                return;
+
+            foreach (var (pending, projectile, missile, sword, entity) in SystemAPI
+                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerProjectileAttackComponent>,
+                                RefRO<PlayerMissileAttackComponent>, RefRO<PlayerSwordAttackComponent>>()
                          .WithAll<GhostOwnerIsLocal>()
                          .WithNone<UIAttackUpgradeCleanupComponent>()
                          .WithEntityAccess())
             {
-                if (uiConfig.UpgradeViewPrefab == null)
-                    continue;
-
                 var uiObj = UnityEngine.Object.Instantiate(uiConfig.UpgradeViewPrefab, canvas.transform);
-                var uiScript = uiObj.GetComponent<AttackUpgradeView>();
+                var view = uiObj.GetComponent<AttackUpgradeView>();
 
-                if (uiScript == null)
+                if (view == null)
                 {
                     UnityEngine.Object.Destroy(uiObj);
                     continue;
                 }
 
-                uiScript.Show(projectileAttack.ValueRO.AttackLevel, missileAttack.ValueRO.AttackLevel, swordAttack.ValueRO.AttackLevel);
-                ecb.AddComponent(entity, new UIAttackUpgradeCleanupComponent { View = uiScript });
+                view.Show(projectile.ValueRO.AttackLevel, missile.ValueRO.AttackLevel, sword.ValueRO.AttackLevel);
+                ecb.AddComponent(entity, new UIAttackUpgradeCleanupComponent { View = view });
             }
 
-            foreach (var (pending, projectileAttack, missileAttack, expComp, entity) in SystemAPI
-                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerProjectileAttackComponent>, RefRO<PlayerMissileAttackComponent>, RefRO<PlayerExperienceComponent>>()
+            foreach (var (pending, expComp, entity) in SystemAPI
+                         .Query<RefRO<PendingAttackUpgradeComponent>, RefRO<PlayerExperienceComponent>>()
                          .WithAll<GhostOwnerIsLocal, UIAttackUpgradeCleanupComponent>()
                          .WithEntityAccess())
             {
-                var upgradeCleanup = EntityManager.GetComponentObject<UIAttackUpgradeCleanupComponent>(entity);
-                if (upgradeCleanup.View == null)
+                var cleanup = EntityManager.GetComponentObject<UIAttackUpgradeCleanupComponent>(entity);
+                if (cleanup.View == null)
                     continue;
 
                 if (expComp.ValueRO.LastUpgradedLevel >= pending.ValueRO.LastUpgradedLevel)
@@ -123,37 +181,84 @@ namespace System
                     continue;
                 }
 
-                if (upgradeCleanup.View.PendingSelection.HasValue)
+                if (cleanup.View.PendingSelection.HasValue)
                 {
                     var rpcEntity = ecb.CreateEntity();
                     ecb.AddComponent(rpcEntity, new AttackUpgradeRequest
                     {
-                        UpgradeType = upgradeCleanup.View.PendingSelection.Value,
+                        UpgradeType = cleanup.View.PendingSelection.Value,
                         TargetLevel = pending.ValueRO.LastUpgradedLevel
                     });
                     ecb.AddComponent<SendRpcCommandRequest>(rpcEntity);
 
-                    upgradeCleanup.View.PendingSelection = null;
+                    cleanup.View.PendingSelection = null;
                 }
             }
+        }
 
-            foreach (var (transform, expComp, entity) in SystemAPI
-                         .Query<RefRO<LocalToWorld>, RefRO<PlayerExperienceComponent>>()
-                         .WithAll<UICleanupComponent>()
+        private void UpdateDeathUI(EntityCommandBuffer ecb, UIConfigComponent uiConfig, Canvas canvas)
+        {
+            foreach (var (reqSrc, reqData, reqEntity) in SystemAPI
+                         .Query<RefRO<ReceiveRpcCommandRequest>, RefRO<PlayerDeathRequest>>()
                          .WithEntityAccess())
             {
-                var uiRef = EntityManager.GetComponentObject<UICleanupComponent>(entity);
-                if (uiRef.View != null)
+                var connectionEntity = reqSrc.ValueRO.SourceConnection;
+
+                if (EntityManager.HasComponent<UIDeathCleanupComponent>(connectionEntity))
                 {
-                    uiRef.View.UpdatePosition(transform.ValueRO.Position);
-                    uiRef.View.SetLevel(expComp.ValueRO.Level);
+                    ecb.DestroyEntity(reqEntity);
+                    continue;
                 }
+
+                if (uiConfig.DeathViewPrefab == null)
+                {
+                    ecb.DestroyEntity(reqEntity);
+                    continue;
+                }
+
+                var uiObj = UnityEngine.Object.Instantiate(uiConfig.DeathViewPrefab, canvas.transform);
+                var view = uiObj.GetComponent<DeathView>();
+
+                if (view == null)
+                {
+                    UnityEngine.Object.Destroy(uiObj);
+                    ecb.DestroyEntity(reqEntity);
+                    continue;
+                }
+
+                view.Show();
+                ecb.AddComponent(connectionEntity, new UIDeathCleanupComponent { View = view });
+                ecb.DestroyEntity(reqEntity);
             }
 
-            foreach (var (transform, entity) in SystemAPI
-                         .Query<RefRO<LocalToWorld>>()
-                         .WithAll<GhostOwnerIsLocal>()
+            foreach (var (networkId, entity) in SystemAPI
+                         .Query<RefRO<NetworkId>>()
+                         .WithAll<NetworkStreamInGame, UIDeathCleanupComponent>()
                          .WithEntityAccess())
+            {
+                var cleanup = EntityManager.GetComponentObject<UIDeathCleanupComponent>(entity);
+                if (cleanup.View == null)
+                    continue;
+
+                if (cleanup.View.RequestRespawn)
+                {
+                    var rpcEntity = ecb.CreateEntity();
+                    ecb.AddComponent(rpcEntity, new PlayerRespawnRequest
+                    {
+                        PlayerName = AuthenticationService.Instance.PlayerName
+                    });
+                    ecb.AddComponent(rpcEntity, new SendRpcCommandRequest { TargetConnection = entity });
+
+                    CleanupDeathUI(ecb);
+                }
+            }
+        }
+
+        private void UpdateCamera()
+        {
+            foreach (var transform in SystemAPI
+                         .Query<RefRO<LocalToWorld>>()
+                         .WithAll<GhostOwnerIsLocal>())
             {
                 Camera.main.transform.position = transform.ValueRO.Position + new float3(0, 13f, -3f);
             }

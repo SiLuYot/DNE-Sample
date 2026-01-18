@@ -1,5 +1,4 @@
-﻿using Component.Enemy;
-using Component.Experience;
+using Component.Enemy;
 using Component.Projectile;
 using Unity.Burst;
 using Unity.Collections;
@@ -44,20 +43,12 @@ namespace System.Projectile
                 .CreateCommandBuffer(state.WorldUnmanaged)
                 .AsParallelWriter();
 
-            // 경험치 오브 스포너가 있으면 프리팹 사용, 없으면 Entity.Null
-            var expOrbPrefab = Entity.Null;
-            if (SystemAPI.TryGetSingleton<ExperienceOrbSpawnerComponent>(out var expSpawner))
-            {
-                expOrbPrefab = expSpawner.Prefab;
-            }
-
             var job = new ProjectileCollisionServerJob
             {
                 CollisionRadius = 0.5f,
                 EnemyEntities = enemyEntities,
                 EnemyTransforms = enemyTransforms,
-                Ecb = ecb,
-                ExperienceOrbPrefab = expOrbPrefab
+                Ecb = ecb
             };
 
             state.Dependency = job.ScheduleParallel(state.Dependency);

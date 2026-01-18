@@ -19,7 +19,6 @@ namespace System.Sword
         [ReadOnly] public ComponentLookup<EnemyKnockbackComponent> EnemyKnockbackLookup;
         [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
         public EntityCommandBuffer Ecb;
-        public Entity ExperienceOrbPrefab;
 
         public void Execute(TriggerEvent triggerEvent)
         {
@@ -75,18 +74,6 @@ namespace System.Sword
 
             swordComp.Durability -= 1;
             SwordLookup[swordEntity] = swordComp;
-
-            if (ExperienceOrbPrefab != Entity.Null && TransformLookup.HasComponent(enemyEntity))
-            {
-                var enemyPos = TransformLookup[enemyEntity].Position;
-                var expOrb = Ecb.Instantiate(ExperienceOrbPrefab);
-                Ecb.SetComponent(expOrb, new LocalTransform
-                {
-                    Position = enemyPos,
-                    Rotation = quaternion.identity,
-                    Scale = 1f
-                });
-            }
 
             Ecb.AddComponent<EnemyDeadTag>(enemyEntity);
         }
