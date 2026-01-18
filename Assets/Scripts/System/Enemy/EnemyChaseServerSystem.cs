@@ -1,4 +1,4 @@
-﻿using Component.Enemy;
+using Component.Enemy;
 using Component.Player;
 using Unity.Burst;
 using Unity.Collections;
@@ -9,6 +9,7 @@ using Unity.Transforms;
 
 namespace System.Enemy
 {
+    [BurstCompile]
     [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
     [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
     public partial struct EnemyChaseServerSystem : ISystem

@@ -1,7 +1,6 @@
 using Component.Player;
 using Component.Sword;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -20,13 +19,16 @@ namespace System.Sword
             state.RequireForUpdate<NetworkStreamInGame>();
             state.RequireForUpdate<PlayerComponent>();
             state.RequireForUpdate<SwordSpawnerComponent>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var ecb = SystemAPI
+                .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
 
             var spawner = SystemAPI.GetSingleton<SwordSpawnerComponent>();
 
@@ -79,8 +81,6 @@ namespace System.Sword
 
                 attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown;
             }
-
-            ecb.Playback(state.EntityManager);
         }
     }
 }

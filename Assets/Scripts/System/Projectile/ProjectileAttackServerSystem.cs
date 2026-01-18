@@ -1,7 +1,6 @@
-﻿using Component.Player;
+using Component.Player;
 using Component.Projectile;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -20,13 +19,16 @@ namespace System.Projectile
             state.RequireForUpdate<NetworkStreamInGame>();
             state.RequireForUpdate<PlayerComponent>();
             state.RequireForUpdate<ProjectileSpawnerComponent>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var ecb = SystemAPI
+                .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
 
             var spawner = SystemAPI.GetSingleton<ProjectileSpawnerComponent>();
 
@@ -67,8 +69,6 @@ namespace System.Projectile
                 var attackSpeedMultiplier = 1.0f + (attack.ValueRO.AttackLevel - 1) * 0.5f;
                 attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown / attackSpeedMultiplier;
             }
-
-            ecb.Playback(state.EntityManager);
         }
     }
 }

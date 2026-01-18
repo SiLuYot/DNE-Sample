@@ -1,5 +1,5 @@
-﻿using Component.Enemy;
-using Unity.Collections;
+using Component.Enemy;
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -7,17 +7,21 @@ using Unity.Transforms;
 
 namespace System.Enemy
 {
+    [BurstCompile]
     [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
     public partial struct EnemySpawnServerSystem : ISystem
     {
         private float _spawnTimer;
 
+        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<NetworkStreamInGame>();
             state.RequireForUpdate<EnemySpawnerComponent>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         }
 
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             _spawnTimer += SystemAPI.Time.DeltaTime;
@@ -28,23 +32,23 @@ namespace System.Enemy
             _spawnTimer = 0;
 
             var prefab = SystemAPI.GetSingleton<EnemySpawnerComponent>().Enemy;
-            var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+            var ecb = SystemAPI
+                .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
 
             foreach (var transform in SystemAPI
                          .Query<RefRO<LocalTransform>>()
                          .WithAll<EnemySpawnPointComponent>())
             {
-                var enemy = commandBuffer.Instantiate(prefab);
-                commandBuffer.SetComponent(enemy, new EnemyComponent());
-                commandBuffer.SetComponent(enemy, new LocalTransform
+                var enemy = ecb.Instantiate(prefab);
+                ecb.SetComponent(enemy, new EnemyComponent());
+                ecb.SetComponent(enemy, new LocalTransform
                 {
                     Position = transform.ValueRO.Position,
                     Rotation = quaternion.identity,
                     Scale = 1f
                 });
             }
-
-            commandBuffer.Playback(state.EntityManager);
         }
     }
 }

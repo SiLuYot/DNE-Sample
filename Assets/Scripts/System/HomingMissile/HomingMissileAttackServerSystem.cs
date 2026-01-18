@@ -1,7 +1,6 @@
-﻿using Component.HomingMissile;
+using Component.HomingMissile;
 using Component.Player;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -22,6 +21,7 @@ namespace System.HomingMissile
             state.RequireForUpdate<NetworkStreamInGame>();
             state.RequireForUpdate<PlayerComponent>();
             state.RequireForUpdate<HomingMissileSpawnerComponent>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
 
             _random = Unity.Mathematics.Random.CreateFromIndex(1234);
         }
@@ -30,7 +30,9 @@ namespace System.HomingMissile
         public void OnUpdate(ref SystemState state)
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var ecb = SystemAPI
+                .GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
 
             var spawner = SystemAPI.GetSingleton<HomingMissileSpawnerComponent>();
 
@@ -110,8 +112,6 @@ namespace System.HomingMissile
 
                 attack.ValueRW.CurrentCooldown = attack.ValueRO.AttackCooldown;
             }
-
-            ecb.Playback(state.EntityManager);
         }
     }
 }

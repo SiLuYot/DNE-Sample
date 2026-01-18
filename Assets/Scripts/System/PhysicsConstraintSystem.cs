@@ -6,11 +6,17 @@ using Unity.Transforms;
 
 namespace System
 {
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
     [BurstCompile]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public partial struct PhysicsConstraintSystem : ISystem
     {
         private const float FixedYPosition = 0f;
+
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<PhysicsMass>();
+        }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)

@@ -1,11 +1,13 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 
 namespace Component.Player
 {
+    [GhostComponent(PrefabType = GhostPrefabType.All)]
     public struct PlayerComponent : IComponentData
     {
-        public int NetworkId;
-        public float3 Direction;
+        [GhostField] public int NetworkId;
+        [GhostField] public float3 Direction;
     }
 }
